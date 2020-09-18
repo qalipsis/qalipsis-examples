@@ -8,7 +8,6 @@ plugins {
     kotlin("jvm") version "1.4.0"
     kotlin("kapt") version "1.4.0"
     kotlin("plugin.allopen") version "1.4.0"
-    id("net.ltgt.apt") version "0.21" apply false
 
     id("nebula.contacts") version "5.1.0"
     id("nebula.info") version "9.1.1"
@@ -34,7 +33,6 @@ allprojects {
     version = File(rootDir, "project.version").readText().trim()
 
     apply(plugin = "java")
-    apply(plugin = "net.ltgt.apt")
     apply(plugin = "nebula.contacts")
     apply(plugin = "nebula.info")
     apply(plugin = "nebula.maven-publish")
