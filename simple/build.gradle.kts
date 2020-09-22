@@ -22,9 +22,12 @@ kapt {
     generateStubs = true
 }
 
+val kotlinCoroutinesVersion: String by project
+
 dependencies {
     implementation(kotlin("stdlib"))
     implementation("io.evolue:api-dsl:${project.version}")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${kotlinCoroutinesVersion}")
     runtimeOnly("io.evolue:runtime:${project.version}")
     kapt("io.evolue:api-processors:${project.version}")
 
