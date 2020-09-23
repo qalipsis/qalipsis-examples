@@ -47,5 +47,5 @@ jobs:
         uses: actions/upload-artifact@v2
         if: always()
         with:
-          name: JUnit Report
+          name: Jars
           path: ./**/build/libs/*-evolue.jar
