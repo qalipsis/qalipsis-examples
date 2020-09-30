@@ -18,10 +18,6 @@ tasks.withType<KotlinCompile>().configureEach {
     }
 }
 
-kapt {
-    generateStubs = true
-}
-
 val kotlinCoroutinesVersion: String by project
 
 dependencies {
