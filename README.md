@@ -1,1 +1,1 @@
-# evolue-plugins
+# qalipsis-plugins

@@ -1,14 +1,14 @@
-package io.evolue.sample.simple
+package io.qalipsis.sample.simple
 
-import io.evolue.api.annotations.Scenario
-import io.evolue.api.rampup.more
-import io.evolue.api.scenario.scenario
-import io.evolue.api.steps.constantPace
-import io.evolue.api.steps.execute
-import io.evolue.api.steps.map
-import io.evolue.api.steps.returns
-import io.evolue.api.steps.shelve
-import io.evolue.api.steps.unshelve
+import io.qalipsis.api.annotations.Scenario
+import io.qalipsis.api.rampup.more
+import io.qalipsis.api.scenario.scenario
+import io.qalipsis.api.steps.constantPace
+import io.qalipsis.api.steps.execute
+import io.qalipsis.api.steps.map
+import io.qalipsis.api.steps.returns
+import io.qalipsis.api.steps.shelve
+import io.qalipsis.api.steps.unshelve
 import org.slf4j.LoggerFactory
 import java.time.Duration
 

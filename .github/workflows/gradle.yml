@@ -30,15 +30,15 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.gradle/caches
-          key: ${{ runner.os }}-evolue-gradle-${{ hashFiles('**/*.gradle') }}
-          restore-keys: ${{ runner.os }}-evolue-gradle-
+          key: ${{ runner.os }}-qalipsis-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-qalipsis-gradle-
 
       - name: Cache Gradle wrapper
         uses: actions/cache@v2
         with:
           path: ~/.gradle/wrapper
-          key: ${{ runner.os }}-evolue-gradle-wrapper-${{ hashFiles('**/*.gradle') }}
-          restore-keys: ${{ runner.os }}-evolue-gradle-wrapper-
+          key: ${{ runner.os }}-qalipsis-gradle-wrapper-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-qalipsis-gradle-wrapper-
 
       - name: Compile
         run: ./gradlew clean build
@@ -48,4 +48,4 @@ jobs:
         if: always()
         with:
           name: Jars
-          path: ./**/build/libs/*-evolue.jar
+          path: ./**/build/libs/*-qalipsis.jar

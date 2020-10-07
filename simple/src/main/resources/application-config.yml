@@ -3,7 +3,7 @@ logging:
   root: warn
   level:
     events: info
-    io.evolue.sample: info
+    io.qalipsis.sample: info
 
 campaign:
   minions-count-per-scenario: 0

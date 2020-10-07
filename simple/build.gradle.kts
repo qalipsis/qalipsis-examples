@@ -8,7 +8,7 @@ plugins {
     id("com.github.johnrengelman.shadow") version "6.0.0"
 }
 
-description = "Evolue Simple Demo"
+description = "Qalipsis Simple Demo"
 
 // Configure both compileKotlin and compileTestKotlin.
 tasks.withType<KotlinCompile>().configureEach {
@@ -22,16 +22,16 @@ val kotlinCoroutinesVersion: String by project
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation("io.evolue:api-dsl:${project.version}")
+    implementation("io.qalipsis:api-dsl:${project.version}")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${kotlinCoroutinesVersion}")
-    runtimeOnly("io.evolue:runtime:${project.version}")
-    kapt("io.evolue:api-processors:${project.version}")
+    runtimeOnly("io.qalipsis:runtime:${project.version}")
+    kapt("io.qalipsis:api-processors:${project.version}")
 
     implementation("org.slf4j:slf4j-api:1.7.30")
 }
 
 application {
-    mainClassName = "io.evolue.runtime.Evolue"
+    mainClassName = "io.qalipsis.runtime.Qalipsis"
     applicationDefaultJvmArgs = listOf("-noverify", "-XX:TieredStopAtLevel=1", "-Dcom.sun.management.jmxremote",
         "-Dmicronaut.env.deduction=false")
     this.ext["workingDir"] = projectDir
@@ -40,7 +40,7 @@ application {
 tasks {
     named<ShadowJar>("shadowJar") {
         mergeServiceFiles()
-        archiveClassifier.set("evolue")
+        archiveClassifier.set("qalipsis")
     }
 }
 

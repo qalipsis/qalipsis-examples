@@ -18,7 +18,7 @@ plugins {
 }
 
 configure<JavaPluginConvention> {
-    description = "Evolue"
+    description = "Qalipsis"
 
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
@@ -29,7 +29,7 @@ tasks.withType<Wrapper> {
 }
 
 allprojects {
-    group = "io.evolue"
+    group = "io.qalipsis"
     version = File(rootDir, "project.version").readText().trim()
 
     apply(plugin = "java")
@@ -120,7 +120,7 @@ allprojects {
             include("**/*IntegrationTest.*", "**/*IntegrationTest$*")
         }
 
-        named<Task>("build") {
+        named<Task>("check") {
             dependsOn(integrationTest.get())
         }
 

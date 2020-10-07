@@ -1,4 +1,4 @@
-rootProject.name = "evolue-samples"
+rootProject.name = "qalipsis-samples"
 
 include(
         "simple"
