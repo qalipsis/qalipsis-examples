@@ -33,6 +33,7 @@ class HelloWorldScenario {
                 more(200, 10, 2.0, 1000)
             }
         }
+            .start()
             .returns<String> { context ->
                 "Hello World! I'm the minion ${context.minionId}"
             }.configure {
