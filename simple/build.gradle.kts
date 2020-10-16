@@ -19,21 +19,30 @@ tasks.withType<KotlinCompile>().configureEach {
 }
 
 val kotlinCoroutinesVersion: String by project
+val micronautVersion: String by project
+val assertkVersion: String by project
 
 dependencies {
     implementation(kotlin("stdlib"))
     implementation("io.qalipsis:api-dsl:${project.version}")
+    /*
+    implementation("io.qalipsis:plugin-XXX:${project.version}")
+     */
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${kotlinCoroutinesVersion}")
-    runtimeOnly("io.qalipsis:runtime:${project.version}")
-    kapt("io.qalipsis:api-processors:${project.version}")
+    /*
+    implementation("com.willowtreeapps.assertk:assertk:$assertkVersion")
+    implementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
+     */
 
-    implementation("org.slf4j:slf4j-api:1.7.30")
+    runtimeOnly("io.qalipsis:runtime:${project.version}")
+
+    kapt("io.qalipsis:api-processors:${project.version}")
 }
 
 application {
     mainClassName = "io.qalipsis.runtime.Qalipsis"
     applicationDefaultJvmArgs = listOf("-noverify", "-XX:TieredStopAtLevel=1", "-Dcom.sun.management.jmxremote",
-        "-Dmicronaut.env.deduction=false")
+            "-Dmicronaut.env.deduction=false")
     this.ext["workingDir"] = projectDir
 }
 
