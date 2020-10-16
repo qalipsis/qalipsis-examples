@@ -5,7 +5,7 @@ plugins {
     application
     kotlin("jvm")
     kotlin("kapt")
-    id("com.github.johnrengelman.shadow") version "6.0.0"
+    id("com.github.johnrengelman.shadow")
 }
 
 description = "Qalipsis Simple Demo"
@@ -21,13 +21,13 @@ tasks.withType<KotlinCompile>().configureEach {
 val kotlinCoroutinesVersion: String by project
 
 dependencies {
+    compileOnly("org.graalvm.nativeimage:svm")
+
     implementation(kotlin("stdlib"))
     implementation("io.qalipsis:api-dsl:${project.version}")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${kotlinCoroutinesVersion}")
     runtimeOnly("io.qalipsis:runtime:${project.version}")
     kapt("io.qalipsis:api-processors:${project.version}")
-
-    implementation("org.slf4j:slf4j-api:1.7.30")
 }
 
 application {

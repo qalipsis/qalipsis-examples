@@ -1,0 +1,6 @@
+micronaut:
+  application:
+    name: demo
+
+redis.uri: redis://redis
+kafka.bootstrap.servers: kafka:9093

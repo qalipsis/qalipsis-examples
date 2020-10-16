@@ -1,0 +1,6 @@
+applicationType: default
+defaultPackage: io.qalipsis
+testFramework: junit
+sourceLanguage: kotlin
+buildTool: gradle
+features: [annotation-api, app-name, graalvm, gradle, http-client, junit, kafka, kotlin, kotlin-application, logback, netty-server, readme, redis-lettuce, security-annotations, security-oauth2, shade, views-thymeleaf, yaml]

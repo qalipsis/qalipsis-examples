@@ -15,6 +15,8 @@ plugins {
     id("nebula.maven-scm") version "17.0.0"
     id("nebula.maven-manifest") version "17.0.0"
     signing
+
+    id("io.micronaut.application") version "1.0.3" apply false
 }
 
 configure<JavaPluginConvention> {
