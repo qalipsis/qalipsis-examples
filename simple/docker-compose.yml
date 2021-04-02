@@ -1,0 +1,27 @@
+version: '2.1'
+services:
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.12.0
+    restart: always
+    cpus: 2
+    mem_limit: 512M
+    environment:
+      - ES_JAVA_OPTS=-Xms256m -Xmx256m
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+    volumes:
+      - elasticsearch-volume:/usr/share/elasticsearch/data
+    ports:
+      - "9210:9200"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.12.0
+    restart: always
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5610:5601"
+
+volumes:
+  elasticsearch-volume:

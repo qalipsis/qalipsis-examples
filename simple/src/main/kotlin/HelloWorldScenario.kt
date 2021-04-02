@@ -2,6 +2,7 @@ package io.qalipsis.sample.simple
 
 import io.qalipsis.api.annotations.Scenario
 import io.qalipsis.api.rampup.more
+import io.qalipsis.api.rampup.regular
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.constantPace
 import io.qalipsis.api.steps.execute
@@ -30,7 +31,7 @@ class HelloWorldScenario {
         scenario("hello-world") {
             minionsCount = minions
             rampUp {
-                more(200, 10, 2.0, 1000)
+                more(200, 10, 1.1, 500)
             }
         }
             .start()
@@ -40,14 +41,14 @@ class HelloWorldScenario {
                 name = "entry"
             }
             .shelve { mapOf("started at" to System.currentTimeMillis()) }
-            .map { str -> str!!.toUpperCase() }.configure {
+            .map { str -> str.toUpperCase() }.configure {
                 name = "map-1"
             }
             .constantPace(Duration.ofMillis(100))
             .unshelve<String, Long>("started at")
             .execute<Pair<String, Long?>, Unit> { ctx ->
-                val input = ctx.input.receive()
-                logger.info("${input.first} and finished after ${input.second!! - start} ms")
+                val input = ctx.receive()
+                logger.debug("${input.first} and finished after ${input.second!! - start} ms")
             }
             .configure {
                 name = "log"

@@ -28,21 +28,19 @@ dependencies {
     /*
     implementation("io.qalipsis:plugin-XXX:${project.version}")
      */
+    implementation("io.qalipsis:plugin-elasticsearch:${project.version}")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${kotlinCoroutinesVersion}")
-    /*
+
     implementation("com.willowtreeapps.assertk:assertk:$assertkVersion")
     implementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
-     */
 
     runtimeOnly("io.qalipsis:runtime:${project.version}")
-
     kapt("io.qalipsis:api-processors:${project.version}")
 }
 
 application {
     mainClassName = "io.qalipsis.runtime.Qalipsis"
-    applicationDefaultJvmArgs = listOf("-noverify", "-XX:TieredStopAtLevel=1", "-Dcom.sun.management.jmxremote",
-            "-Dmicronaut.env.deduction=false")
+    applicationDefaultJvmArgs = listOf("-noverify", "-Dcom.sun.management.jmxremote", "-Dmicronaut.env.deduction=false")
     this.ext["workingDir"] = projectDir
 }
 
