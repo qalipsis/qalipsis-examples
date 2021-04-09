@@ -7,16 +7,6 @@ logging:
     io.qalipsis.plugins.elasticsearch.events: info
     io.qalipsis.core.heads.campaigns.CampaignAutoStarter: trace
 
-monitoring:
-  export:
-    elastic: # FIXME
-      host: http://localhost:9210
-      enabled: true
-      step: 10s
-      index: qalipsis-metrics
-      indexDateFormat: yyyy-MM-dd
-      autoCreateIndex: true
-
 campaign:
   minions-count-per-scenario: 0
   minions-factor: 1
@@ -27,13 +17,6 @@ campaign:
 events:
   root: trace
   export:
-    elasticsearch:
-      enabled: true
-      urls: http://localhost:9210
-      min-level: trace
-      store-source: true
-      publishers: 1
-      batchSize: 30000
     slf4j:
-      enabled: false
+      enabled: true
       min-level: trace

@@ -87,7 +87,7 @@ allprojects {
     publishing {
         publications {
             filterIsInstance<MavenPublication>().forEach {
-                it.artifactId = "samples-${project.name}"
+                it.artifactId = "examples-${project.name}"
             }
         }
         repositories {
@@ -106,7 +106,7 @@ allprojects {
 
     tasks {
         withType<Jar> {
-            archiveBaseName.set("samples-${project.name}")
+            archiveBaseName.set("examples-${project.name}")
         }
 
         named<Test>("test") {
