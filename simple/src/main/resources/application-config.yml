@@ -1,12 +1,22 @@
 logging:
   console: false
-  root: warn
+  root: info
   level:
     events: info
     io.qalipsis.sample: info
+    io.qalipsis.plugins.elasticsearch.events: info
+    io.qalipsis.core.heads.campaigns.CampaignAutoStarter: trace
 
 campaign:
   minions-count-per-scenario: 0
   minions-factor: 1
   speed-factor: 1
   start-offset-ms: 500
+  name: campaign-${random.shortuuid}
+
+events:
+  root: trace
+  export:
+    slf4j:
+      enabled: true
+      min-level: trace

@@ -1,6 +1,7 @@
-rootProject.name = "qalipsis-samples"
+rootProject.name = "qalipsis-examples"
 
 include(
-        "simple"
+    "simple",
+    "tcp-echo"
 )
 

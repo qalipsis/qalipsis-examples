@@ -8,7 +8,7 @@ plugins {
     id("com.github.johnrengelman.shadow") version "6.0.0"
 }
 
-description = "Qalipsis Simple Demo"
+description = "Qalipsis Demo of a TCP reusable connection"
 
 // Configure both compileKotlin and compileTestKotlin.
 tasks.withType<KotlinCompile>().configureEach {
@@ -25,9 +25,7 @@ val assertkVersion: String by project
 dependencies {
     implementation(kotlin("stdlib"))
     implementation("io.qalipsis:api-dsl:${project.version}")
-    /*
-    implementation("io.qalipsis:plugin-XXX:${project.version}")
-     */
+    implementation("io.qalipsis:plugin-netty:${project.version}")
     implementation("io.qalipsis:plugin-elasticsearch:${project.version}")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${kotlinCoroutinesVersion}")
 

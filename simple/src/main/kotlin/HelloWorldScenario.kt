@@ -1,6 +1,7 @@
-package io.qalipsis.sample.simple
+package io.qalipsis.example.simple
 
 import io.qalipsis.api.annotations.Scenario
+import io.qalipsis.api.logging.LoggerHelper.logger
 import io.qalipsis.api.rampup.more
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.constantPace
@@ -9,7 +10,6 @@ import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.returns
 import io.qalipsis.api.steps.shelve
 import io.qalipsis.api.steps.unshelve
-import org.slf4j.LoggerFactory
 import java.time.Duration
 
 /**
@@ -30,7 +30,7 @@ class HelloWorldScenario {
         scenario("hello-world") {
             minionsCount = minions
             rampUp {
-                more(200, 10, 2.0, 1000)
+                more(200, 10, 1.1, 10000)
             }
         }
             .start()
@@ -40,14 +40,14 @@ class HelloWorldScenario {
                 name = "entry"
             }
             .shelve { mapOf("started at" to System.currentTimeMillis()) }
-            .map { str -> str!!.toUpperCase() }.configure {
+            .map { str -> str.toUpperCase() }.configure {
                 name = "map-1"
             }
             .constantPace(Duration.ofMillis(100))
             .unshelve<String, Long>("started at")
             .execute<Pair<String, Long?>, Unit> { ctx ->
-                val input = ctx.input.receive()
-                logger.info("${input.first} and finished after ${input.second!! - start} ms")
+                val input = ctx.receive()
+                logger.debug { "${input.first} and finished after ${input.second!! - start} ms" }
             }
             .configure {
                 name = "log"
@@ -58,6 +58,6 @@ class HelloWorldScenario {
     companion object {
 
         @JvmStatic
-        private val logger = LoggerFactory.getLogger(HelloWorldScenario::class.java)
+        private val logger = logger()
     }
 }
