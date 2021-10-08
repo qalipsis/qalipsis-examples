@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Distributed System Scenario" type="Application" factoryName="Application">
+    <option name="ALTERNATIVE_JRE_PATH" value="/Library/Java/JavaVirtualMachines/temurin-11.jdk/Contents/Home"/>
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true"/>
+    <option name="MAIN_CLASS_NAME" value="io.qalipsis.runtime.Qalipsis"/>
+    <module name="qalipsis-examples.distributed-system.main"/>
+    <option name="VM_PARAMETERS"
+      value="-Xmx2G -Xms2G -server -Dio.netty.leakDetectionLevel=advanced -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+ExplicitGCInvokesConcurrent -XX:MaxInlineLevel=15 -Djava.awt.headless=true -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=heap-dump.hprof -XX:ErrorFile=logs/hs_err_pid%p.log"/>
+    <option name="WORKING_DIRECTORY" value="$MODULE_DIR$"/>
+    <method v="2">
+      <option name="Make" enabled="true"/>
+    </method>
+  </configuration>
+</component>

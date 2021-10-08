@@ -1,0 +1,60 @@
+logging:
+  console: false
+  root: WARN
+  level:
+    events: TRACE
+    io.qalipsis.example: ERROR
+    io:
+      qalipsis:
+        core:
+          factories:
+            orchestration: ERROR
+              #steps:
+              #IterativeStepDecorator: DEBUG
+            #StageStep: TRACE
+
+
+monitoring:
+  export:
+    elastic: # FIXME
+      host: http://localhost:9210
+      enabled: true
+      step: 10s
+      index: qalipsis-metrics
+      indexDateFormat: yyyy-MM-dd
+      autoCreateIndex: true
+
+events:
+  root: trace
+  export:
+    elasticsearch:
+      enabled: true
+      urls: http://localhost:9200
+      min-level: trace
+      store-source: true
+      publishers: 1
+      batchSize: 30000
+    slf4j:
+      enabled: false
+      min-level: trace
+
+campaign:
+  minions-count-per-scenario: 10000
+  minions-factor: 1
+  speed-factor: 1
+  start-offset-ms: 2000
+  name: distributed-system-${random.shortuuid}
+
+http:
+  server:
+    url: https://localhost:8443
+  client:
+    pool:
+      size: 50
+
+kafka:
+  bootstrap: localhost:9093
+elasticsearch:
+  url: http://localhost:9200
+redis:
+  uri: localhost:6379

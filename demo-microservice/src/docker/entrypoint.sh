@@ -1,0 +1,1 @@
+java $JVM_ARGS -jar /opt/demo/qalipsis-demo-microservice.jar $*

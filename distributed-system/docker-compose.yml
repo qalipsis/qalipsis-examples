@@ -1,0 +1,60 @@
+version: '3.5'
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.12.0
+    restart: always
+    environment:
+      - ES_JAVA_OPTS=-Xms256m -Xmx256m
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+    volumes:
+      - elasticsearch-volume:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.12.0
+    restart: always
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+
+  redis:
+    image: redis:6
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./test/resources/redis-v6.conf:/usr/local/etc/redis/redis.conf
+
+  lagoon:
+    image: aerisconsulting/lagoon
+    command: "-b ZGF0YXNvdXJjZXM6CiAgLSBpZDogbG9jYWwKICAgIHZlbmRvcjogcmVkaXMKICAgIG5hbWU6IFFhbGlwc2lzCiAgICBib290c3RyYXA6IHJlZGlzOi8vcmVkaXM6NjM3OQ=="
+    ports:
+      - "4000:4000"
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+
+  kafka:
+    image: wurstmeister/kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 0
+      KAFKA_LISTENERS: LOCAL://0.0.0.0:9093,PLAINTEXT://0.0.0.0:9092
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_ADVERTISED_LISTENERS: LOCAL://localhost:9093,PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,LOCAL:PLAINTEXT
+      KAFKA_AUTO_CREATE_TOPICS: 'true'
+      KAFKA_CREATE_TOPICS: "http-request:1:1"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181/kafka
+    depends_on:
+      - zookeeper
+
+volumes:
+  elasticsearch-volume:

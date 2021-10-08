@@ -2,6 +2,8 @@ rootProject.name = "qalipsis-examples"
 
 include(
     "simple",
-    "tcp-echo"
+    "tcp-echo",
+    "demo-microservice",
+    "distributed-system"
 )
 

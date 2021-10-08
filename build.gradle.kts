@@ -5,9 +5,9 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent.STANDARD_ERROR
 
 plugins {
     java
-    kotlin("jvm") version "1.4.0"
-    kotlin("kapt") version "1.4.0"
-    kotlin("plugin.allopen") version "1.4.0"
+    kotlin("jvm") version "1.4.32"
+    kotlin("kapt") version "1.4.32"
+    kotlin("plugin.allopen") version "1.4.32"
 
     id("nebula.contacts") version "5.1.0"
     id("nebula.info") version "9.1.1"
@@ -15,6 +15,7 @@ plugins {
     id("nebula.maven-scm") version "17.0.0"
     id("nebula.maven-manifest") version "17.0.0"
     signing
+    id("com.palantir.docker") version "0.28.0" apply false
 }
 
 configure<JavaPluginConvention> {
@@ -25,7 +26,8 @@ configure<JavaPluginConvention> {
 }
 
 tasks.withType<Wrapper> {
-    distributionType = Wrapper.DistributionType.ALL
+    distributionType = Wrapper.DistributionType.BIN
+    gradleVersion = "7.2"
 }
 
 allprojects {
@@ -59,14 +61,6 @@ allprojects {
         mavenLocal()
         mavenCentral()
         jcenter()
-        maven {
-            name = "bintray"
-            setUrl("https://jcenter.bintray.com")
-        }
-        maven {
-            name = "rubygems"
-            setUrl("http://rubygems-proxy.torquebox.org/releases")
-        }
         maven {
             name = "maven-central-snapshots"
             setUrl("https://oss.sonatype.org/content/repositories/snapshots")
