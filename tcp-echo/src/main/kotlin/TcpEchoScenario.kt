@@ -14,7 +14,7 @@ import io.qalipsis.api.steps.returns
 import io.qalipsis.api.steps.verify
 import io.qalipsis.plugins.netty.RequestResult
 import io.qalipsis.plugins.netty.netty
-import io.qalipsis.plugins.netty.tcp.TcpResult
+import io.qalipsis.plugins.netty.tcp.ConnectionAndRequestResult
 import io.qalipsis.plugins.netty.tcp.spec.closeTcp
 import io.qalipsis.plugins.netty.tcp.spec.tcp
 import io.qalipsis.plugins.netty.tcp.spec.tcpWith
@@ -68,8 +68,9 @@ class TcpEchoScenario {
             }
             .verify {
                 assertThat(it).all {
-                    prop(TcpResult<String, ByteArray>::meters).all {
-                        prop(TcpResult.Meters::timeToSuccessfulConnect).isNotNull().isLessThan(Duration.ofMillis(500))
+                    prop(ConnectionAndRequestResult<String, ByteArray>::meters).all {
+                        prop(ConnectionAndRequestResult.Meters::timeToSuccessfulConnect).isNotNull()
+                            .isLessThan(Duration.ofMillis(500))
                     }
                 }
             }.configure {
@@ -83,7 +84,7 @@ class TcpEchoScenario {
             }
             .verify {
                 assertThat(it).all {
-                    prop(RequestResult<ByteArray, ByteArray>::meters).all {
+                    prop(RequestResult<ByteArray, ByteArray, *>::meters).all {
                         prop(RequestResult.Meters::timeToFirstByte).isNotNull().isLessThan(Duration.ofMillis(300))
                         prop(RequestResult.Meters::timeToLastByte).isNotNull().isLessThan(Duration.ofMillis(500))
                     }

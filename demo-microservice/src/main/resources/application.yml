@@ -1,0 +1,122 @@
+micronaut:
+  application:
+    name: qalipsis-demo-microservice
+  security:
+    enabled: true
+    intercept-url-map:
+      - pattern: "/login"
+        http-method: POST
+        access:
+          - isAnonymous()
+      - pattern: "/"
+        http-method: GET
+        access:
+          - isAnonymous()
+    endpoints:
+      login:
+        enabled: true
+    session:
+      enabled: true
+    authentication: session
+  session:
+    http:
+      redis:
+        enabled: true
+        # The Redis namespace to write sessions to.
+        namespace: 'qalipsis-demo:sessions:'
+        session-created-topic: 'qalipsis-demo:sessions:event:session-created'
+        active-sessions-key: 'qalipsis-demo:sessions:active-sessions'
+        # Write session changes in the background.
+        write-mode: BACKGROUND
+        # Disable programmatic activation of keyspace events.
+        enable-keyspace-events: false
+  executors:
+    consumer:
+      type: cached
+  server:
+    http-version: ${SERVER_HTTP_VERSION:2.0}
+    dualProtocol: ${SERVER_DUAL_PROTOCOL:true}
+    http-to-https-redirect: ${SERVER_HTTP_TO_HTTPS_REDIRECT:true}
+    netty:
+      log-level: trace
+      event-loops:
+        default:
+          prefer-native-transport: true
+          executor: IO
+          num-threads: 20
+      worker:
+        prefer-native-transport: true
+        executor: IO
+    port: 8080
+
+  ssl:
+    enabled: true
+    buildSelfSigned: true
+
+logger:
+  levels:
+    ROOT: ERROR
+    io.micronaut.http.server.netty: ${NETTY_LOG_LEVEL:ERROR}
+    io.qalipsis.demo: INFO
+    io.micronaut.runtime: INFO
+    io.micronaut.configuration.kafka: INFO
+    io.micronaut.rabbitmq: INFO
+    #io.micronaut.context.condition: DEBUG
+
+app:
+  security:
+    login: ${SECURITY_LOGIN:test}
+    password: ${SECURITY_PASSWORD:test}
+
+messaging:
+  rabbitmq:
+    listener:
+      enabled: ${MESSAGING_RABBITMQ_LISTENER_ENABLED:false}
+    publisher:
+      enabled: ${MESSAGING_RABBITMQ_PUBLISHER_ENABLED:false}
+  kafka:
+    listener:
+      enabled: ${MESSAGING_KAFKA_LISTENER_ENABLED:false}
+    publisher:
+      enabled: ${MESSAGING_KAFKA_PUBLISHER_ENABLED:false}
+
+rabbitmq:
+  enabled: ${RABBITMQ_ENABLED:false}
+  health.enabled: false
+  uri: ${RABBITMQ_URI:`amqp://localhost:5672`}
+
+kafka:
+  enabled: ${KAFKA_ENABLED:false}
+  health.enabled: false
+  bootstrap.servers: ${KAFKA_BOOTSTRAP_SERVERS:`localhost:9092`}
+  client.id: demo-microservice
+
+  compression.type: ${KAFKA_COMPRESSION_TYPE:lz4}
+  delivery.timeout.ms: 20000
+  request.timeout.ms: 5000
+  security.protocol: PLAINTEXT
+
+  producers:
+    default:
+      linger.ms: ${KAFKA_LINGER_MS:0}
+      acks: '1'
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+  consumers:
+    default:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+elasticsearch:
+  http-hosts: ${ELASTICSEARCH_HTTP_HOSTS:`http://localhost:9200`}
+  health.enabled: false
+
+redis:
+  uri: ${REDIS_URI:`redis://localhost:6379`}
+  health.enabled: false
+
+endpoints.health:
+  rabbitmq.enabled: false
+  kafka.enabled: false
+  elasticsearch.rest.high.level.enabled: false
+  redis.enabled: false
