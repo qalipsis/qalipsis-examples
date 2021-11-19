@@ -14,7 +14,7 @@ import io.qalipsis.api.annotations.Scenario
 import io.qalipsis.api.context.StepContext
 import io.qalipsis.api.events.EventsLogger
 import io.qalipsis.api.logging.LoggerHelper.logger
-import io.qalipsis.api.rampup.more
+import io.qalipsis.api.rampup.regular
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.*
 import io.qalipsis.plugins.elasticsearch.ElasticsearchDocument
@@ -62,7 +62,7 @@ class DistributedSystemScenario(
         scenario("distributed-system") {
             minionsCount = 100
             rampUp {
-                more(1000, 10, 1.2, 200)
+                this.regular(500, 50)
             }
         }
             .start()
@@ -147,7 +147,6 @@ class DistributedSystemScenario(
     ) = netty()
         .httpWith("http-data-push-without-login") {
             name = "http-push-device-state"
-            iterate(50, Duration.ofSeconds(2))
             request { ctx, (deviceState, cookie) ->
                 deviceState.deviceId = ctx.minionId
                 deviceState.timestamp = System.currentTimeMillis()
@@ -181,7 +180,7 @@ class DistributedSystemScenario(
         elasticsearchUrl: String
     ) {
         innerJoin(
-            using = { deviceState -> deviceState.value.deviceId + ":" + deviceState.value.timestamp },
+            using = { deviceState -> deviceState.value.deviceId },
             on = {
                 it.elasticsearch()
                     .poll {
@@ -216,10 +215,10 @@ class DistributedSystemScenario(
                         pollDelay(Duration.ofSeconds(2))
                     }.flatten(EnhancedDeviceState::class)
             },
-            having = { correlationRecord -> correlationRecord.value.value.deviceId + ":" + correlationRecord.value.value.timestamp }
+            having = { correlationRecord -> correlationRecord.value.value.deviceId }
         ).configure {
             name = "join-request-in-elasticsearch"
-            timeout(30_000) // We expect the Kafka record to be available in the next 10 seconds.
+            timeout(30_000) // We expect the Kafka record to be available in the next 30 seconds.
             report {
                 reportErrors = true
             }
@@ -256,7 +255,7 @@ class DistributedSystemScenario(
         kafkaBootstrap: String
     ) {
         innerJoin(
-            using = { correlationRecord -> correlationRecord.value.deviceId + ":" + correlationRecord.value.timestamp },
+            using = { correlationRecord -> correlationRecord.value.deviceId },
             on = {
                 it.kafka()
                     .consume {
@@ -268,7 +267,7 @@ class DistributedSystemScenario(
                         offsetReset(OffsetResetStrategy.EARLIEST)
                     }.flatten(Serdes.ByteArray().deserializer(), jsonSerde<DeviceState>().deserializer())
             },
-            having = { correlationRecord -> correlationRecord.value.record.value!!.deviceId + ":" + correlationRecord.value.record.value!!.timestamp }
+            having = { correlationRecord -> correlationRecord.value.record.value!!.deviceId }
         ).configure {
             name = "join-request-with-kafka"
             timeout(10_000) // We expect the Kafka record to be available in the next 10 seconds.

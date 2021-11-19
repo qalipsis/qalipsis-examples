@@ -39,7 +39,8 @@ create the index to receive the test data:
 PUT http-requests
 {
   "settings": {
-    "refresh_interval": "1s"
+    "refresh_interval": "1s",
+    "number_of_replicas" : 0
   },
   "mappings": {
     "_source": {

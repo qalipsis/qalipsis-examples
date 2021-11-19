@@ -30,8 +30,6 @@ dependencies {
     implementation("io.qalipsis:plugin-netty:${project.version}")
     implementation("io.qalipsis:plugin-elasticsearch:${project.version}")
     implementation("io.qalipsis:plugin-kafka:${project.version}")
-    implementation("io.qalipsis:plugin-rabbitmq:${project.version}")
-    implementation("io.qalipsis:plugin-redis-lettuce:${project.version}")
 
     kapt("io.qalipsis:api-processors:${project.version}")
 

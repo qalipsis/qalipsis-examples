@@ -9,15 +9,26 @@ logging:
         core:
           factories:
             orchestration: ERROR
-              #steps:
-              #IterativeStepDecorator: DEBUG
-            #StageStep: TRACE
 
-meters:
+# For the executors:
+# - 0 or less means the Kotlin Global Scope
+# - 1 or more means a fixed thread execution context with the number of threads - cannot be less than 2
+# - 1.5x means 1.5 times the number of cores, rounded to the next integer if required - cannot be less than 2
+# - name of another executor to reuse it
+executors:
+  global: 0
+  campaign: 2x
+  io: 2x
+  background: 4
+  orchestration: 4
+
+monitoring:
   elasticsearch:
     hosts: http://localhost:9200
     enabled: true
-    step: PT10S
+    step: 10s
+    index: qalipsis-metrics
+    index-date-format: yyyy-MM-dd
 
 events:
   root: trace
@@ -28,13 +39,13 @@ events:
       min-level: trace
       store-source: true
       publishers: 1
-      batchSize: 30000
+      batch-size: 30000
     slf4j:
       enabled: false
       min-level: trace
 
 campaign:
-  minions-count-per-scenario: 200000
+  minions-count-per-scenario: 2000
   minions-factor: 1
   speed-factor: 1
   start-offset-ms: 2000
