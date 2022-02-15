@@ -28,6 +28,7 @@ tasks.withType<KotlinCompile>().configureEach {
 
 val kotlinVersion: String by project
 val micronautVersion: String by project
+val postgresqlDriverVersion = "42.3.1"
 
 dependencies {
     implementation(kotlin("stdlib"))
@@ -35,6 +36,7 @@ dependencies {
     kapt(platform("io.micronaut:micronaut-bom:$micronautVersion"))
     kapt("io.micronaut.security:micronaut-security-annotations")
     kapt("io.micronaut:micronaut-inject-java")
+    kapt("io.micronaut.data:micronaut-data-processor:${micronautVersion}")
 
     implementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
     implementation("io.qalipsis:api-dev:${project.version}")
@@ -49,12 +51,16 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}")
     implementation("io.micronaut:micronaut-validation")
-    implementation("io.micronaut.elasticsearch:micronaut-elasticsearch")
     implementation("io.micronaut.redis:micronaut-redis-lettuce")
     implementation("io.micronaut.kotlin:micronaut-kotlin-extension-functions")
     implementation("io.micronaut.kafka:micronaut-kafka")
     implementation("io.micronaut.rabbitmq:micronaut-rabbitmq")
     implementation("io.micronaut.rxjava3:micronaut-rxjava3")
+    implementation("io.micronaut.data:micronaut-data-jdbc")
+    implementation("io.micronaut.sql:micronaut-jdbc-hikari")
+    implementation("org.postgresql:postgresql:$postgresqlDriverVersion")
+    implementation("io.micronaut.liquibase:micronaut-liquibase")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
 
     runtimeOnly("ch.qos.logback:logback-classic")
     runtimeOnly("com.fasterxml.jackson.module:jackson-module-kotlin")
@@ -75,7 +81,7 @@ dependencies {
     testImplementation("io.micronaut.test:micronaut-test-junit5")
     testImplementation("org.testcontainers:kafka:1.+")
     testImplementation("org.testcontainers:rabbitmq:1.+")
-    testImplementation("org.testcontainers:elasticsearch:1.+")
+    testImplementation("org.testcontainers:postgresql:1.+")
     testImplementation("org.testcontainers:junit-jupiter:1.+") {
         exclude("junit", "junit")
     }
@@ -107,7 +113,7 @@ task<JavaExec>("runHttpKafkaServer") {
 
 task<JavaExec>("runKafkaListenerServer") {
     group = "application"
-    description = "Starts the microservice as a Kafka listener to save data into Elasticsearch"
+    description = "Starts the microservice as a Kafka listener to save data into Timescale"
     mainClass.set("io.qalipsis.demo.QalipsisDemoMicroserviceKt")
     maxHeapSize = "256m"
     jvmArgs("-Dmicronaut.env.deduction=false")
@@ -115,8 +121,11 @@ task<JavaExec>("runKafkaListenerServer") {
         "KAFKA_ENABLED" to true,
         "MESSAGING_KAFKA_LISTENER_ENABLED" to true,
         "KAFKA_BOOTSTRAP_SERVERS" to "localhost:9093",
-        "ELASTICSEARCH_HTTP_HOSTS" to "http://localhost:9200",
-        "REDIS_URI" to "redis://localhost:6379"
+        "REDIS_URI" to "redis://localhost:6379",
+        "DATASOURCES_DEFAULT_URL" to "jdbc:postgresql://localhost:25432/qalipsis",
+        "DATASOURCES_DEFAULT_USERNAME" to "qalipsis_demo",
+        "DATASOURCES_DEFAULT_PASSWORD" to "qalipsis",
+        "LIQUIBASE_ENABLED" to "true",
     )
     args("--micronaut.server.port=-1", "--micronaut.ssl.port=-1")
     classpath = sourceSets["main"].runtimeClasspath

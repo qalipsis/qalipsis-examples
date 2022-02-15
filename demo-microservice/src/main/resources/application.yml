@@ -106,17 +106,36 @@ kafka:
     default:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      fetch.max.wait.ms: 500
+      max.poll.records: 1000
+      fetch.min.bytes: 1048576
+      fetch.max.bytes: 52428800
+      max.partition.fetch.bytes: 52428800
 
-elasticsearch:
-  http-hosts: ${ELASTICSEARCH_HTTP_HOSTS:`http://localhost:9200`}
-  health.enabled: false
 
 redis:
   uri: ${REDIS_URI:`redis://localhost:6379`}
   health.enabled: false
 
+datasources:
+  default:
+    url: jdbc:postgresql://localhost:25432/qalipsis
+    username: qalipsis_demo
+    password: qalipsis
+    dialect: POSTGRES
+    driverClassName: org.postgresql.Driver
+    schema: public
+    schema-generate: none
+
+liquibase:
+  enabled: false
+  datasources:
+    default:
+      change-log: 'classpath:db/liquibase-changelog.xml'
+      liquibase-schema: public
+
 endpoints.health:
   rabbitmq.enabled: false
   kafka.enabled: false
-  elasticsearch.rest.high.level.enabled: false
   redis.enabled: false
+  jdbc.enabled: false

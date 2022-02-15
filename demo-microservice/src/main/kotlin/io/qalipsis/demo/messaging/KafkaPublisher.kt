@@ -12,7 +12,7 @@ import io.micronaut.context.annotation.Requires
  */
 @KafkaClient(id = "product-client")
 @Requires(property = "messaging.kafka.publisher.enabled", value = "true", defaultValue = "false")
-interface KafkaPublisher : Publisher {
+internal interface KafkaPublisher : Publisher {
 
     /**
      * Publishes the message to Kafka.

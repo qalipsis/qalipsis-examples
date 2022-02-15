@@ -7,7 +7,7 @@ package io.qalipsis.demo.messaging
  *
  * @author Alexander Sosnovsky
  */
-interface Publisher {
+internal interface Publisher {
 
     /**
      * Publishes the message.

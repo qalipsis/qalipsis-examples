@@ -16,8 +16,10 @@ import io.micronaut.test.extensions.junit5.annotation.MicronautTest
 import io.micronaut.test.support.TestPropertyProvider
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.junit5.MockKExtension
+import io.mockk.mockk
 import io.mockk.verifyOrder
 import io.qalipsis.demo.messaging.Publisher
+import io.qalipsis.demo.services.JdbcService
 import jakarta.inject.Inject
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -25,10 +27,12 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.testcontainers.containers.BindMode
 import org.testcontainers.containers.GenericContainer
+import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.shaded.org.bouncycastle.util.encoders.Base64
+import org.testcontainers.utility.DockerImageName
 import java.time.Duration
 import kotlin.math.pow
 
@@ -61,13 +65,19 @@ internal class DemoMicroserviceIntegrationTest : TestPropertyProvider {
     @MockBean(Publisher::class)
     fun publisher(): Publisher = publisher
 
+    @MockBean(JdbcService::class)
+    fun jdbcService(): JdbcService = mockk()
+
     override fun getProperties(): MutableMap<String, String> {
         return mutableMapOf(
             "app.security.login" to "test",
             "app.security.password" to "test",
             "messaging.rabbitmq.enabled" to "false",
             "messaging.kafka.enabled" to "false",
-            "redis.uri" to "redis://${redisContainer.containerIpAddress}:${redisContainer.getMappedPort(6379)}"
+            "redis.uri" to "redis://${redisContainer.containerIpAddress}:${redisContainer.getMappedPort(6379)}",
+            "datasources.default.url" to pgsql.jdbcUrl,
+            "datasources.default.username" to pgsql.username,
+            "datasources.default.password" to pgsql.password,
         )
     }
 
@@ -126,6 +136,19 @@ internal class DemoMicroserviceIntegrationTest : TestPropertyProvider {
                 withStartupTimeout(Duration.ofSeconds(60))
                 withClasspathResourceMapping("redis-v6.conf", "/etc/redis.conf", BindMode.READ_ONLY)
                 withCommand("redis-server /etc/redis.conf")
+            }
+
+        @Container
+        @JvmStatic
+        private val pgsql =
+            PostgreSQLContainer<Nothing>(
+                DockerImageName.parse("timescale/timescaledb:latest-pg14")
+                    .asCompatibleSubstituteFor("postgres")
+            ).apply {
+                withCreateContainerCmdModifier { cmd ->
+                    cmd.hostConfig!!.withMemory(512 * 1024.0.pow(2).toLong()).withCpuCount(2)
+                }
+                withInitScript("pgsql-init.sql")
             }
     }
 }

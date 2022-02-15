@@ -22,16 +22,16 @@ executors:
   background: 4
   orchestration: 4
 
-monitoring:
+meters:
   elasticsearch:
     hosts: http://localhost:9200
     enabled: true
-    step: 10s
-    index: qalipsis-metrics
+    step: 5s
+    index: qalipsis-meters
     index-date-format: yyyy-MM-dd
 
 events:
-  root: trace
+  root: TRACE
   export:
     elasticsearch:
       enabled: true
@@ -60,5 +60,10 @@ http:
 
 kafka:
   bootstrap: localhost:9093
-elasticsearch:
-  url: http://localhost:9200
+
+jdbc:
+  url: jdbc:postgresql://localhost:25432/qalipsis
+  port: 25432
+  database: qalipsis
+  username: qalipsis_demo
+  password: qalipsis

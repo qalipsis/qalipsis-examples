@@ -28,8 +28,9 @@ dependencies {
     implementation("io.qalipsis:api-dsl:${project.version}")
 
     implementation("io.qalipsis:plugin-netty:${project.version}")
-    implementation("io.qalipsis:plugin-elasticsearch:${project.version}")
     implementation("io.qalipsis:plugin-kafka:${project.version}")
+    implementation("io.qalipsis:plugin-elasticsearch:${project.version}")
+    implementation("io.qalipsis:plugin-r2dbc-jasync:${project.version}")
 
     kapt("io.qalipsis:api-processors:${project.version}")
 

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.4.xsd">
+  <changeSet id="01" author="ejesse">
+    <createSequence sequenceName="device_state_seq"/>
+    <createTable tableName="device_state">
+      <column name="saving_timestamp" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="device_id" type="varchar(50)">
+        <constraints nullable="true"/>
+      </column>
+      <column name="timestamp" type="BIGINT">
+        <constraints nullable="true"/>
+      </column>
+      <column name="position_lat" type="DECIMAL(6,3)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="position_lon" type="DECIMAL(6,3)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="battery_level_percentage" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="message_key" type="varchar(50)">
+        <constraints nullable="true"/>
+      </column>
+    </createTable>
+
+    <addPrimaryKey tableName="device_state" columnNames="device_id, timestamp"/>
+  </changeSet>
+</databaseChangeLog>

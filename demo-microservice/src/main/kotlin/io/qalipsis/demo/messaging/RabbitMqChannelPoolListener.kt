@@ -14,7 +14,7 @@ import jakarta.inject.Singleton
  */
 @Singleton
 @Requires(property = "messaging.rabbitmq.enabled", notEquals = "false")
-class RabbitMqChannelPoolListener : ChannelInitializer() {
+internal class RabbitMqChannelPoolListener : ChannelInitializer() {
 
     /**
      * Initializes the channel.

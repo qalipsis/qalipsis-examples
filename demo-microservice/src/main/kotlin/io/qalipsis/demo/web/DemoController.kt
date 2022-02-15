@@ -16,7 +16,7 @@ import io.qalipsis.demo.messaging.Publisher
  */
 @Secured(SecurityRule.IS_AUTHENTICATED)
 @Controller("/")
-class DemoController(val publishers: Collection<Publisher>) {
+internal class DemoController(val publishers: Collection<Publisher>) {
 
     init {
         log.info { "Registered publishers" }

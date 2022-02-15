@@ -1,10 +1,12 @@
 package io.qalipsis.demo.messaging
 
-import io.mockk.coVerify
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.junit5.MockKExtension
-import io.qalipsis.demo.services.ElasticsearchService
+import io.mockk.mockk
+import io.mockk.verify
+import io.qalipsis.demo.entity.DeviceState
+import io.qalipsis.demo.services.JdbcService
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -16,7 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 internal class KafkaListenerTest {
 
     @RelaxedMockK
-    lateinit var elasticsearchService: ElasticsearchService
+    lateinit var jdbcService: JdbcService
 
     @InjectMockKs
     lateinit var kafkaListener: KafkaListener
@@ -24,8 +26,8 @@ internal class KafkaListenerTest {
     @Test
     fun `check kafka consumer forwards data to the elasticsearch service`() {
         val key1 = "the key"
-        val data1 = """  { "q": "z" } """
-        val data2 = """  { "q": "w" } """
+        val data1 = mockk<DeviceState>()
+        val data2 = mockk<DeviceState>()
 
         // when
         kafkaListener.receive(
@@ -37,8 +39,8 @@ internal class KafkaListenerTest {
         )
 
         // then
-        coVerify(exactly = 1) {
-            elasticsearchService.save(eq(listOf(key1 to data1, null to data2)))
+        verify(exactly = 1) {
+            jdbcService.save(eq(listOf(key1 to data1, null to data2)))
         }
     }
 

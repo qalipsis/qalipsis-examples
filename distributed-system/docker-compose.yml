@@ -50,6 +50,18 @@ services:
     depends_on:
       - zookeeper
 
+  timescale:
+    image: timescale/timescaledb:latest-pg14
+    restart: always
+    environment:
+      POSTGRES_USER: qalipsis_demo
+      POSTGRES_PASSWORD: qalipsis
+      POSTGRES_DB: qalipsis
+    volumes:
+      - timescale-volume:/var/lib/postgresql/data
+    ports:
+      - "25432:5432"
+
   http-to-kafka:
     image: aerisconsulting/http-to-kafka
     command:
@@ -70,12 +82,16 @@ services:
       - KAFKA_ENABLED=true
       - MESSAGING_KAFKA_LISTENER_ENABLED=true
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - ELASTICSEARCH_HTTP_HOSTS=http://elasticsearch:9200
       - REDIS_URI=redis://redis:6379
+      - DATASOURCES_DEFAULT_URL=jdbc:postgresql://timescale:5432/qalipsis
+      - DATASOURCES_DEFAULT_USERNAME=qalipsis_demo
+      - DATASOURCES_DEFAULT_PASSWORD=qalipsis
+      - LIQUIBASE_ENABLED=true
     depends_on:
       - redis
       - kafka
-      - elasticsearch
+      - timescale
 
 volumes:
   elasticsearch-volume:
+  timescale-volume:
