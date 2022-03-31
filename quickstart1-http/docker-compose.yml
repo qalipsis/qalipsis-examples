@@ -1,0 +1,11 @@
+version: '3.5'
+services:
+  http-punching-ball:
+    image: aerisconsulting/http-punching-ball
+    command:
+      - "--https=true"
+      - "--ssl-key=http-server.key"
+      - "--ssl-cert=http-server.crt"
+    ports:
+      - "18080:8080"
+      - "18443:8443"

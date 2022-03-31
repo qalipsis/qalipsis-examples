@@ -10,11 +10,11 @@ plugins {
     kotlin("kapt") version "1.4.32"
     kotlin("plugin.allopen") version "1.4.32"
 
-    id("nebula.contacts") version "5.1.0"
-    id("nebula.info") version "9.1.1"
-    id("nebula.maven-publish") version "17.0.0"
-    id("nebula.maven-scm") version "17.0.0"
-    id("nebula.maven-manifest") version "17.0.0"
+    id("nebula.contacts") version "6.0.0"
+    id("nebula.info") version "11.3.3"
+    id("nebula.maven-publish") version "18.4.0"
+    id("nebula.maven-scm") version "18.4.0"
+    id("nebula.maven-manifest") version "18.4.0"
     signing
     id("com.palantir.docker") version "0.28.0" apply false
 }
