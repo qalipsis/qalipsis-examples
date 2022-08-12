@@ -114,9 +114,9 @@ class DistributedSystemScenario(
                             key("aeris-http-to-kafka-session")
                         }
                     }
-                    /*prop(RequestResult<*, HttpResponse<String>, *>::meters).all {
+                    prop(RequestResult<*, HttpResponse<String>, *>::meters).all {
                         prop(RequestResult.Meters::timeToLastByte).isNotNull().isLessThan(Duration.ofMillis(100))
-                    }*/
+                    }
                 }
             }.configure {
                 name = "Verify login"
@@ -191,7 +191,6 @@ class DistributedSystemScenario(
                             database = jdbcDatabase
                         }
                         query("""SELECT * FROM device_state order by "timestamp"""")
-                        tieBreaker("timestamp", true)
                         pollDelay(Duration.ofSeconds(2))
                     }.flatten()
             },

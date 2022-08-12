@@ -5,6 +5,7 @@ include(
     "tcp-echo",
     "demo-microservice",
     "quickstart1-http",
-    "distributed-system"
+    "distributed-system",
+    "opencellid"
 )
 

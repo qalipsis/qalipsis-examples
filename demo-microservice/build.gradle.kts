@@ -73,7 +73,7 @@ dependencies {
 
     testImplementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
     testImplementation("io.micronaut.rxjava3:micronaut-rxjava3-http-client")
-    testImplementation("io.mockk:mockk:1.+")
+    testImplementation("io.mockk:mockk:1.11.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
     testImplementation("com.willowtreeapps.assertk:assertk:0.+")
@@ -148,6 +148,7 @@ tasks {
         mergeServiceFiles()
         archiveClassifier.set("qalipsis")
     }
+
     build {
         dependsOn(shadowJar)
     }

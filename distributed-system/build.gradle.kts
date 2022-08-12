@@ -1,4 +1,5 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransformer
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -61,11 +62,10 @@ application {
 tasks {
     named<ShadowJar>("shadowJar") {
         mergeServiceFiles()
+        transform(ServiceFileTransformer().also { it.setPath("META-INF/qalipsis/**") })
         archiveClassifier.set("qalipsis")
     }
-}
 
-tasks {
     build {
         dependsOn(shadowJar)
     }
