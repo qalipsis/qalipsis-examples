@@ -25,8 +25,8 @@ val assertkVersion: String by project
 dependencies {
     implementation(kotlin("stdlib"))
     implementation("com.willowtreeapps.assertk:assertk:$assertkVersion")
-
     implementation("io.qalipsis:api-dsl:${project.version}")
+    implementation("io.qalipsis:api-processors:${project.version}")
 
     implementation("io.qalipsis:plugin-netty:${project.version}")
     implementation("io.qalipsis:plugin-kafka:${project.version}")
@@ -36,12 +36,16 @@ dependencies {
     kapt("io.qalipsis:api-processors:${project.version}")
 
     runtimeOnly("io.qalipsis:runtime:${project.version}")
+    runtimeOnly("io.qalipsis:head:${project.version}")
+    runtimeOnly("io.qalipsis:factory:${project.version}")
 }
 
-application {
-    mainClassName = "io.qalipsis.runtime.Qalipsis"
-    applicationDefaultJvmArgs = listOf(
-        "-Xmx2G",
+task<JavaExec>("runCampaign") {
+    group = "application"
+    description = "Start a campaign with all the scenarios"
+    mainClass.set("io.qalipsis.runtime.Qalipsis")
+    maxHeapSize = "2G"
+    jvmArgs = listOf(
         "-Xms2G",
         "-XX:-MaxFDLimit",
         "-server",
@@ -56,7 +60,9 @@ application {
         "-XX:HeapDumpPath=heap-dump.hprof",
         "-XX:ErrorFile=logs/hs_err_pid%p.log"
     )
-    this.ext["workingDir"] = projectDir
+    args("--autostart", "-c", "report.export.console.enabled=true")
+    workingDir = projectDir
+    classpath = sourceSets["main"].runtimeClasspath
 }
 
 tasks {

@@ -1,0 +1,2 @@
+campaign:
+  name: cassandra-${random.shortuuid}

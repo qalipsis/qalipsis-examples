@@ -70,7 +70,7 @@ class TcpEchoScenario {
                 assertThat(it).all {
                     prop(ConnectionAndRequestResult<String, ByteArray>::meters).all {
                         prop(ConnectionAndRequestResult.Meters::timeToSuccessfulConnect).isNotNull()
-                            .isLessThan(Duration.ofMillis(500))
+                            .isLessThan(Duration.ofMillis(1000))
                     }
                 }
             }.configure {
@@ -93,11 +93,5 @@ class TcpEchoScenario {
                 name = "verify-tcp-request"
             }
             .netty().closeTcp("tcp-connect-and-query")
-    }
-
-    companion object {
-
-        @JvmStatic
-        private val logger = logger()
     }
 }

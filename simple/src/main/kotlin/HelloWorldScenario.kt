@@ -22,7 +22,7 @@ import java.time.Duration
  */
 class HelloWorldScenario {
 
-    val minions = 50_000
+    val minions = 50
     var start = System.currentTimeMillis()
 
     @Scenario

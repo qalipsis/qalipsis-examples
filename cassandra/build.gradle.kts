@@ -9,7 +9,8 @@ plugins {
     id("com.github.johnrengelman.shadow") version "7.1.1"
 }
 
-description = "Qalipsis Demo - Testing a HTTP server"
+val kotlinCoroutinesVersion: String by project
+description = "Cassandra demo. Show how to do save & poll and save & search"
 
 // Configure both compileKotlin and compileTestKotlin.
 tasks.withType<KotlinCompile>().configureEach {
@@ -23,10 +24,15 @@ val assertkVersion: String by project
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation("io.kotest:kotest-assertions-core:4.+")
+    implementation("io.kotest:kotest-assertions-core:5.4.2")
     implementation("io.qalipsis:api-dsl:${project.version}")
     implementation("io.qalipsis:api-processors:${project.version}")
-    implementation("io.qalipsis:plugin-netty:${project.version}")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${kotlinCoroutinesVersion}")
+    implementation("ch.qos.logback:logback-classic:1.2.3"){ version { strictly("1.2.3") } }
+    implementation("ch.qos.logback:logback-core:1.2.3"){ version { strictly("1.2.3") } }
+
+    implementation("io.qalipsis:plugin-cassandra:${project.version}")
+    implementation("io.qalipsis:plugin-jackson:${project.version}")
 
     kapt("io.qalipsis:api-processors:${project.version}")
 
@@ -35,27 +41,22 @@ dependencies {
     runtimeOnly("io.qalipsis:factory:${project.version}")
 }
 
-task<JavaExec>("runCampaign") {
+task<JavaExec>("runCampaignForSaveAndPoll") {
     group = "application"
     description = "Start a campaign with all the scenarios"
     mainClass.set("io.qalipsis.runtime.Qalipsis")
-    maxHeapSize = "2G"
-    jvmArgs = listOf(
-        "-Xms2G",
-        "-XX:-MaxFDLimit",
-        "-server",
-        "-Dio.netty.leakDetectionLevel=advanced",
-        "-XX:+UseG1GC",
-        "-XX:MaxGCPauseMillis=20",
-        "-XX:InitiatingHeapOccupancyPercent=35",
-        "-XX:+ExplicitGCInvokesConcurrent",
-        "-XX:MaxInlineLevel=15",
-        "-Djava.awt.headless=true",
-        "-XX:+HeapDumpOnOutOfMemoryError",
-        "-XX:HeapDumpPath=heap-dump.hprof",
-        "-XX:ErrorFile=logs/hs_err_pid%p.log"
-    )
-    args("--autostart", "-c", "report.export.console.enabled=true")
+    maxHeapSize = "256m"
+    args("--autostart", "-c", "report.export.console.enabled=true", "-s", "cassandra-save-and-poll")
+    workingDir = projectDir
+    classpath = sourceSets["main"].runtimeClasspath
+}
+
+task<JavaExec>("runCampaignForSaveAndSearch") {
+    group = "application"
+    description = "Start a campaign with all the scenarios"
+    mainClass.set("io.qalipsis.runtime.Qalipsis")
+    maxHeapSize = "256m"
+    args("--autostart", "-c", "report.export.console.enabled=true", "-s", "cassandra-save-and-search")
     workingDir = projectDir
     classpath = sourceSets["main"].runtimeClasspath
 }

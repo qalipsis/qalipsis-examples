@@ -1,2 +1,7 @@
+logging:
+  console: false
+
 campaign:
   name: quickstart-${random.shortuuid}
+
+report.export.console.enabled: true

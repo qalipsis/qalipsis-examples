@@ -1,19 +1,17 @@
 logging:
-  console: false
+  console: true
   root: info
   level:
     events: info
     io.qalipsis.example: info
 
-monitoring:
-  export:
-    elastic: # FIXME
-      host: http://localhost:9210
-      enabled: true
-      step: 10s
-      index: qalipsis-metrics
-      indexDateFormat: yyyy-MM-dd
-      autoCreateIndex: true
+meters:
+  elasticsearch:
+    hosts: http://localhost:9210
+    enabled: false
+    step: 5s
+    index: qalipsis-meters
+    index-date-format: yyyy-MM-dd
 
 campaign:
   minions-count-per-scenario: 0
@@ -26,7 +24,7 @@ events:
   root: trace
   export:
     elasticsearch:
-      enabled: true
+      enabled: false
       urls: http://localhost:9210
       min-level: trace
       store-source: true
