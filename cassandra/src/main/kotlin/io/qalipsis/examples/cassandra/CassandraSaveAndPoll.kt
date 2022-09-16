@@ -4,7 +4,7 @@ import com.datastax.oss.driver.api.core.CqlIdentifier
 import com.datastax.oss.driver.api.core.type.reflect.GenericType
 import io.kotest.matchers.ints.shouldBeExactly
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.rampup.regular
+import io.qalipsis.api.executionprofile.regular
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.flatten
@@ -36,7 +36,7 @@ class CassandraSaveAndPoll {
         //we define the scenario, set the name, number of minions and rampUp
         scenario("cassandra-save-and-poll") {
             minionsCount = NUMBER_MINION
-            rampUp {
+            profile {
                 regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
             }
         }
@@ -130,7 +130,7 @@ class CassandraSaveAndPoll {
             .filterNotNull()
             .verify { result ->
                 val savedBatteryState = result.first
-                val foundedBatteryState = result.second!!
+                val foundedBatteryState = result.second
                 foundedBatteryState.batteryLevel shouldBeExactly savedBatteryState.batteryLevel
             }
     }

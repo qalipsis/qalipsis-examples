@@ -3,7 +3,7 @@ package io.qalipsis.examples.cassandra
 import com.datastax.oss.driver.api.core.CqlIdentifier
 import io.kotest.matchers.ints.shouldBeExactly
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.rampup.regular
+import io.qalipsis.api.executionprofile.regular
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.verify
@@ -29,7 +29,7 @@ class CassandraSaveAndSearch {
         //we define the scenario, set the name, number of minions and rampUp
         scenario("cassandra-save-and-search") {
             minionsCount = NUMBER_MINION
-            rampUp {
+            profile {
                 regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
             }
         }

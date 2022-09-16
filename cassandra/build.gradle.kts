@@ -20,25 +20,18 @@ tasks.withType<KotlinCompile>().configureEach {
     }
 }
 
-val assertkVersion: String by project
-
 dependencies {
-    implementation(kotlin("stdlib"))
+    implementation(enforcedPlatform("io.qalipsis:qalipsis-platform:0.4.a-SNAPSHOT"))
+    kapt(enforcedPlatform("io.qalipsis:qalipsis-platform:0.4.a-SNAPSHOT"))
+
+    runtimeOnly("io.qalipsis:runtime")
+    runtimeOnly("io.qalipsis:head")
+    runtimeOnly("io.qalipsis:factory")
+
+    implementation("io.qalipsis:plugin-cassandra")
+    implementation("io.qalipsis:plugin-jackson")
+
     implementation("io.kotest:kotest-assertions-core:5.4.2")
-    implementation("io.qalipsis:api-dsl:${project.version}")
-    implementation("io.qalipsis:api-processors:${project.version}")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${kotlinCoroutinesVersion}")
-    implementation("ch.qos.logback:logback-classic:1.2.3"){ version { strictly("1.2.3") } }
-    implementation("ch.qos.logback:logback-core:1.2.3"){ version { strictly("1.2.3") } }
-
-    implementation("io.qalipsis:plugin-cassandra:${project.version}")
-    implementation("io.qalipsis:plugin-jackson:${project.version}")
-
-    kapt("io.qalipsis:api-processors:${project.version}")
-
-    runtimeOnly("io.qalipsis:runtime:${project.version}")
-    runtimeOnly("io.qalipsis:head:${project.version}")
-    runtimeOnly("io.qalipsis:factory:${project.version}")
 }
 
 task<JavaExec>("runCampaignForSaveAndPoll") {
