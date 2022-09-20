@@ -6,8 +6,8 @@ import io.micronaut.http.annotation.Header
 import io.micronaut.http.annotation.Post
 import io.micronaut.security.annotation.Secured
 import io.micronaut.security.rules.SecurityRule
-import io.qalipsis.api.logging.LoggerHelper.logger
 import io.qalipsis.demo.messaging.Publisher
+import mu.KotlinLogging
 
 /**
  * Demo controller.
@@ -39,7 +39,7 @@ internal class DemoController(val publishers: Collection<Publisher>) {
     companion object {
 
         @JvmStatic
-        private val log = logger()
+        private val log = KotlinLogging.logger { }
     }
 
 }

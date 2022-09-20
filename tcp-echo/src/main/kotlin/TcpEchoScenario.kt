@@ -6,8 +6,7 @@ import assertk.assertions.isLessThan
 import assertk.assertions.isNotNull
 import assertk.assertions.prop
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.logging.LoggerHelper.logger
-import io.qalipsis.api.rampup.more
+import io.qalipsis.api.executionprofile.more
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.returns
@@ -32,11 +31,11 @@ class TcpEchoScenario {
 
     val minions = 500
 
-    @Scenario
+    @Scenario("tcp-echo")
     fun myScenario() {
-        scenario("tcp-echo") {
+        scenario {
             minionsCount = minions
-            rampUp {
+            profile {
                 more(1000, 10, 1.2, 200)
             }
         }

@@ -9,7 +9,7 @@ plugins {
     id("com.github.johnrengelman.shadow") version "7.1.1"
 }
 
-description = "Cassandra demo. Show how to do save & poll and save & search"
+description = "Elasticsearch demo. Show how to do save & poll and save & search"
 
 // Configure both compileKotlin and compileTestKotlin.
 tasks.withType<KotlinCompile>().configureEach {
@@ -32,7 +32,7 @@ dependencies {
     runtimeOnly("io.qalipsis:head")
     runtimeOnly("io.qalipsis:factory")
 
-    implementation("io.qalipsis.plugin:cassandra")
+    implementation("io.qalipsis.plugin:elasticsearch")
     implementation("io.qalipsis.plugin:jackson")
 
     implementation("io.kotest:kotest-assertions-core:5.4.2")
@@ -40,20 +40,20 @@ dependencies {
 
 task<JavaExec>("runCampaignForSaveAndPoll") {
     group = "application"
-    description = "Start a campaign with all the scenarios"
+    description = "Start a campaign with the scenario elasticsearch-save-and-poll"
     mainClass.set("io.qalipsis.runtime.Qalipsis")
     maxHeapSize = "256m"
-    args("--autostart", "-c", "report.export.console.enabled=true", "-s", "cassandra-save-and-poll")
+    args("--autostart", "-c", "report.export.console.enabled=true", "-s", "elasticsearch-save-and-poll")
     workingDir = projectDir
     classpath = sourceSets["main"].runtimeClasspath
 }
 
 task<JavaExec>("runCampaignForSaveAndSearch") {
     group = "application"
-    description = "Start a campaign with all the scenarios"
+    description = "Start a campaign with the scenario elasticsearch-save-and-search"
     mainClass.set("io.qalipsis.runtime.Qalipsis")
     maxHeapSize = "256m"
-    args("--autostart", "-c", "report.export.console.enabled=true", "-s", "cassandra-save-and-search")
+    args("--autostart", "-c", "report.export.console.enabled=true", "-s", "elasticsearch-save-and-search")
     workingDir = projectDir
     classpath = sourceSets["main"].runtimeClasspath
 }

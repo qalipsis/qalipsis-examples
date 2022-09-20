@@ -3,10 +3,10 @@ package io.qalipsis.demo.services
 import io.micronaut.context.annotation.Property
 import io.micronaut.transaction.SynchronousTransactionManager
 import io.micronaut.validation.Validated
-import io.qalipsis.api.logging.LoggerHelper.logger
 import io.qalipsis.demo.entity.DeviceState
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Singleton
+import mu.KotlinLogging
 import org.postgresql.util.PSQLException
 import java.sql.Connection
 import javax.validation.Valid
@@ -64,6 +64,6 @@ internal class JdbcService(
 
     private companion object {
 
-        val log = logger()
+        val log = KotlinLogging.logger { }
     }
 }

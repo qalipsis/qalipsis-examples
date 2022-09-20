@@ -4,9 +4,9 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.rabbitmq.annotation.Queue
 import io.micronaut.rabbitmq.annotation.RabbitHeaders
 import io.micronaut.rabbitmq.annotation.RabbitListener
-import io.qalipsis.api.logging.LoggerHelper.logger
 import io.qalipsis.demo.entity.DeviceState
 import io.qalipsis.demo.services.JdbcService
+import mu.KotlinLogging
 
 /**
  * Implementation of [Listener] to support data receiving from RabbitMQ.
@@ -35,6 +35,6 @@ internal class RabbitMqListener(private val jdbcService: JdbcService) {
     companion object {
 
         @JvmStatic
-        private val log = logger()
+        private val log = KotlinLogging.logger { }
     }
 }

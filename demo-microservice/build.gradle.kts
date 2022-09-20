@@ -5,7 +5,7 @@ plugins {
     kotlin("jvm")
     kotlin("kapt")
     kotlin("plugin.allopen")
-    id("com.github.johnrengelman.shadow") version "6.0.0"
+    id("com.github.johnrengelman.shadow") version "7.1.1"
     id("com.palantir.docker")
 }
 
@@ -30,7 +30,15 @@ val kotlinVersion: String by project
 val micronautVersion: String by project
 val postgresqlDriverVersion = "42.3.1"
 
+kapt {
+    includeCompileClasspath = true
+}
+
 dependencies {
+    implementation(platform("io.qalipsis:qalipsis-platform:0.5.a-SNAPSHOT"))
+    kapt(platform("io.qalipsis:qalipsis-platform:0.5.a-SNAPSHOT"))
+    kapt("io.qalipsis:api-processors")
+
     implementation(kotlin("stdlib"))
 
     kapt(platform("io.micronaut:micronaut-bom:$micronautVersion"))
@@ -39,7 +47,6 @@ dependencies {
     kapt("io.micronaut.data:micronaut-data-processor:${micronautVersion}")
 
     implementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
-    implementation("io.qalipsis:api-dev:${project.version}")
     implementation("io.micronaut:micronaut-runtime")
     implementation("io.micronaut.kotlin:micronaut-kotlin-runtime")
     implementation("io.micronaut.kotlin:micronaut-kotlin-extension-functions")
@@ -60,7 +67,9 @@ dependencies {
     implementation("io.micronaut.sql:micronaut-jdbc-hikari")
     implementation("org.postgresql:postgresql:$postgresqlDriverVersion")
     implementation("io.micronaut.liquibase:micronaut-liquibase")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
+    implementation("io.github.microutils:kotlin-logging:2.1.23")
 
     runtimeOnly("ch.qos.logback:logback-classic")
     runtimeOnly("com.fasterxml.jackson.module:jackson-module-kotlin")

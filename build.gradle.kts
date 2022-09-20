@@ -6,9 +6,9 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent.STANDARD_ERROR
 plugins {
     java
     idea
-    kotlin("jvm") version "1.5.31"
-    kotlin("kapt") version "1.5.31"
-    kotlin("plugin.allopen") version "1.5.31"
+    kotlin("jvm") version "1.6.21"
+    kotlin("kapt") version "1.6.21"
+    kotlin("plugin.allopen") version "1.6.21"
 
     id("nebula.contacts") version "6.0.0"
     id("nebula.info") version "11.3.3"
@@ -19,8 +19,9 @@ plugins {
     id("com.palantir.docker") version "0.28.0" apply false
 }
 
-configure<JavaPluginConvention> {
-    description = "Qalipsis"
+description = "QALIPSIS Examples"
+
+java {
 
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
@@ -47,7 +48,7 @@ allprojects {
     apply(plugin = "signing")
 
     infoBroker {
-        excludedManifestProperties =listOf("Module-Owner", "Module-Email", "Module-Source")
+        excludedManifestProperties = listOf("Module-Owner", "Module-Email", "Module-Source")
     }
 
     contacts {
@@ -68,7 +69,7 @@ allprojects {
         }
     }
 
-    configure<JavaPluginConvention> {
+    java {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }

@@ -24,10 +24,10 @@ import java.time.Instant
 
 class CassandraSaveAndSearch {
 
-    @Scenario
+    @Scenario("cassandra-save-and-search")
     fun scenarioSaveAndSearch() {
         //we define the scenario, set the name, number of minions and rampUp
-        scenario("cassandra-save-and-search") {
+        scenario {
             minionsCount = NUMBER_MINION
             profile {
                 regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
