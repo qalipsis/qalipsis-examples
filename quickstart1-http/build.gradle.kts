@@ -1,5 +1,4 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransformer
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -22,17 +21,17 @@ tasks.withType<KotlinCompile>().configureEach {
 val assertkVersion: String by project
 
 dependencies {
-    implementation(kotlin("stdlib"))
-    implementation("io.kotest:kotest-assertions-core:4.+")
-    implementation("io.qalipsis:api-dsl:${project.version}")
-    implementation("io.qalipsis:api-processors:${project.version}")
-    implementation("io.qalipsis:plugin-netty:${project.version}")
+    implementation(enforcedPlatform("io.qalipsis:qalipsis-platform:0.5.a-SNAPSHOT"))
+    kapt(enforcedPlatform("io.qalipsis:qalipsis-platform:0.5.a-SNAPSHOT"))
+    kapt("io.qalipsis:api-processors")
 
-    kapt("io.qalipsis:api-processors:${project.version}")
+    runtimeOnly("io.qalipsis:runtime")
+    runtimeOnly("io.qalipsis:head")
+    runtimeOnly("io.qalipsis:factory")
 
-    runtimeOnly("io.qalipsis:runtime:${project.version}")
-    runtimeOnly("io.qalipsis:head:${project.version}")
-    runtimeOnly("io.qalipsis:factory:${project.version}")
+    implementation("io.qalipsis.plugin:netty")
+
+    implementation("io.kotest:kotest-assertions-core:5.4.2")
 }
 
 task<JavaExec>("runCampaign") {
@@ -60,10 +59,14 @@ task<JavaExec>("runCampaign") {
     classpath = sourceSets["main"].runtimeClasspath
 }
 
+application {
+    mainClass.set("io.qalipsis.runtime.Qalipsis")
+    this.ext["workingDir"] = projectDir
+}
+
 tasks {
     named<ShadowJar>("shadowJar") {
         mergeServiceFiles()
-        transform(ServiceFileTransformer().also { it.setPath("META-INF/qalipsis/**") })
         archiveClassifier.set("qalipsis")
     }
 

@@ -1,8 +1,7 @@
 package io.qalipsis.example.simple
 
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.logging.LoggerHelper.logger
-import io.qalipsis.api.rampup.more
+import io.qalipsis.api.executionprofile.more
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.constantPace
 import io.qalipsis.api.steps.execute
@@ -10,7 +9,9 @@ import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.returns
 import io.qalipsis.api.steps.shelve
 import io.qalipsis.api.steps.unshelve
+import mu.KotlinLogging
 import java.time.Duration
+import java.util.Locale
 
 /**
  *
@@ -25,11 +26,11 @@ class HelloWorldScenario {
     val minions = 50
     var start = System.currentTimeMillis()
 
-    @Scenario
+    @Scenario("hello-world")
     fun myScenario() {
-        scenario("hello-world") {
+        scenario {
             minionsCount = minions
-            rampUp {
+            profile {
                 more(200, 10, 1.1, 10000)
             }
         }
@@ -40,7 +41,7 @@ class HelloWorldScenario {
                 name = "entry"
             }
             .shelve { mapOf("started at" to System.currentTimeMillis()) }
-            .map { str -> str.toUpperCase() }.configure {
+            .map { str -> str.uppercase(Locale.getDefault()) }.configure {
                 name = "map-1"
             }
             .constantPace(Duration.ofMillis(100))
@@ -58,6 +59,6 @@ class HelloWorldScenario {
     companion object {
 
         @JvmStatic
-        private val logger = logger()
+        private val logger = KotlinLogging.logger { }
     }
 }

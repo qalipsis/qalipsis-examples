@@ -5,9 +5,9 @@ import io.micronaut.configuration.kafka.annotation.OffsetReset
 import io.micronaut.configuration.kafka.annotation.OffsetStrategy
 import io.micronaut.configuration.kafka.annotation.Topic
 import io.micronaut.context.annotation.Requires
-import io.qalipsis.api.logging.LoggerHelper.logger
 import io.qalipsis.demo.entity.DeviceState
 import io.qalipsis.demo.services.JdbcService
+import mu.KotlinLogging
 import org.apache.kafka.clients.consumer.ConsumerRecord
 
 /**
@@ -39,6 +39,6 @@ internal class KafkaListener(private val jdbcService: JdbcService) {
     companion object {
 
         @JvmStatic
-        private val log = logger()
+        private val log = KotlinLogging.logger { }
     }
 }

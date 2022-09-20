@@ -12,7 +12,7 @@ import io.qalipsis.api.annotations.Property
 import io.qalipsis.api.annotations.Scenario
 import io.qalipsis.api.context.StepContext
 import io.qalipsis.api.events.EventsLogger
-import io.qalipsis.api.rampup.regular
+import io.qalipsis.api.executionprofile.regular
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.*
 import io.qalipsis.api.steps.datasource.DatasourceRecord
@@ -52,17 +52,17 @@ class DistributedSystemScenario(
     @Property(name = "jdbc.password") private val jdbcPassword: String
 ) {
 
-    @Scenario
+    @Scenario("distributed-system")
     fun myScenario(
         @Property(name = "http.server.url") serverUrl: String,
         @Property(name = "http.client.pool.size") poolSize: Int,
         @Property(name = "kafka.bootstrap") kafkaBootstrap: String,
         objectMapper: ObjectMapper
     ) {
-        scenario("distributed-system") {
+        scenario {
             minionsCount = 100
-            rampUp {
-                this.regular(500, 50)
+            profile {
+                regular(500, 50)
             }
         }
             .start()

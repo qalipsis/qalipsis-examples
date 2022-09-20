@@ -6,7 +6,7 @@ plugins {
     application
     kotlin("jvm")
     kotlin("kapt")
-    id("com.github.johnrengelman.shadow") version "6.0.0"
+    id("com.github.johnrengelman.shadow") version "7.1.1"
     id("com.palantir.docker")
 }
 
@@ -22,22 +22,21 @@ tasks.withType<KotlinCompile>().configureEach {
 
 val assertkVersion: String by project
 
+kapt {
+    includeCompileClasspath = true
+}
+
 dependencies {
-    implementation(kotlin("stdlib"))
+    implementation(platform("io.qalipsis:qalipsis-platform:0.5.a-SNAPSHOT"))
+    kapt(platform("io.qalipsis:qalipsis-platform:0.5.a-SNAPSHOT"))
+    kapt("io.qalipsis:api-processors")
+
+    implementation("io.qalipsis.plugin:netty")
+    implementation("io.qalipsis.plugin:kafka")
+    implementation("io.qalipsis.plugin:elasticsearch")
+    implementation("io.qalipsis.plugin:r2dbc-jasync")
+
     implementation("com.willowtreeapps.assertk:assertk:$assertkVersion")
-    implementation("io.qalipsis:api-dsl:${project.version}")
-    implementation("io.qalipsis:api-processors:${project.version}")
-
-    implementation("io.qalipsis:plugin-netty:${project.version}")
-    implementation("io.qalipsis:plugin-kafka:${project.version}")
-    implementation("io.qalipsis:plugin-elasticsearch:${project.version}")
-    implementation("io.qalipsis:plugin-r2dbc-jasync:${project.version}")
-
-    kapt("io.qalipsis:api-processors:${project.version}")
-
-    runtimeOnly("io.qalipsis:runtime:${project.version}")
-    runtimeOnly("io.qalipsis:head:${project.version}")
-    runtimeOnly("io.qalipsis:factory:${project.version}")
 }
 
 task<JavaExec>("runCampaign") {
@@ -65,6 +64,11 @@ task<JavaExec>("runCampaign") {
     classpath = sourceSets["main"].runtimeClasspath
 }
 
+application {
+    mainClass.set("io.qalipsis.runtime.Qalipsis")
+    this.ext["workingDir"] = projectDir
+}
+
 tasks {
     named<ShadowJar>("shadowJar") {
         mergeServiceFiles()
@@ -78,6 +82,7 @@ tasks {
 }
 
 val shadowJarName = "examples-${project.name}-${project.version}-qalipsis.jar"
+
 docker {
     name = "aerisconsulting/qalipsis-demo-distributed-system"
     setDockerfile(project.file("src/docker/Dockerfile"))

@@ -7,10 +7,10 @@ import io.micronaut.security.authentication.AuthenticationFailed
 import io.micronaut.security.authentication.AuthenticationProvider
 import io.micronaut.security.authentication.AuthenticationRequest
 import io.micronaut.security.authentication.AuthenticationResponse
-import io.qalipsis.api.logging.LoggerHelper.logger
 import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Flowable
 import jakarta.inject.Singleton
+import mu.KotlinLogging
 import org.reactivestreams.Publisher
 
 /**
@@ -54,7 +54,7 @@ class AuthenticationProviderUserPassword : AuthenticationProvider {
     companion object {
 
         @JvmStatic
-        private val log = logger()
+        private val log = KotlinLogging.logger { }
     }
 
 }

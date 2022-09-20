@@ -10,7 +10,7 @@ import io.netty.handler.codec.http.HttpHeaderValues
 import io.netty.handler.codec.http.HttpMethod
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.rampup.regular
+import io.qalipsis.api.executionprofile.regular
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.verify
 import io.qalipsis.plugins.netty.http.request.SimpleHttpRequest
@@ -23,11 +23,11 @@ import java.time.Duration
 @Suppress("DuplicatedCode")
 class Quickstart {
 
-    @Scenario
+    @Scenario("quickstart-http")
     fun quickstart() {
-        scenario("quickstart-http") {
+        scenario {
             minionsCount = 10_000
-            rampUp {
+            profile {
                 regular(periodMs = 500, minionsCountProLaunch = 100)
             }
         }

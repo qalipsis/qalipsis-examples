@@ -7,7 +7,6 @@ import io.qalipsis.api.annotations.Scenario
 import io.qalipsis.api.executionprofile.regular
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.filterNotNull
-import io.qalipsis.api.steps.flatten
 import io.qalipsis.api.steps.innerJoin
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.verify
@@ -30,11 +29,11 @@ import java.time.Instant
 @Suppress("DuplicatedCode")
 class CassandraSaveAndPoll {
 
-    @Scenario
+    @Scenario("cassandra-save-and-poll")
     fun scenarioSaveAndPoll() {
 
         //we define the scenario, set the name, number of minions and rampUp
-        scenario("cassandra-save-and-poll") {
+        scenario {
             minionsCount = NUMBER_MINION
             profile {
                 regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
