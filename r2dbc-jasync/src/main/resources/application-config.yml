@@ -1,2 +1,0 @@
-campaign:
-  name: r2dbc-jasync-${random.shortuuid}
