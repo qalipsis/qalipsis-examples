@@ -1,0 +1,28 @@
+version: '3.9'
+
+services:
+
+  mariadb:
+    image: mariadb
+    restart: always
+    container_name: mariadb-server
+    ports:
+      - "13306:3306"
+    environment:
+      MARIADB_ROOT_PASSWORD : root
+      MARIADB_DATABASE: "iot"
+    volumes:
+      - ./config/mariadb/create_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql
+
+  postgres:
+    image: postgres
+    container_name: postgres-server
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: root
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - ./config/postgres/create_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql
+      - ./volumes/postgres:/var/lib/postgresql/data
+    ports:
+      - "15432:5432"
