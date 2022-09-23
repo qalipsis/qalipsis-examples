@@ -8,5 +8,6 @@ include(
     "quickstart1-http",
     "distributed-system",
     "cassandra",
-    "elasticsearch"
+    "elasticsearch",
+    "r2dbc-jasync"
 )
