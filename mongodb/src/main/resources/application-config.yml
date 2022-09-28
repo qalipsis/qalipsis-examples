@@ -1,0 +1,6 @@
+campaign:
+  name: mongodb-${random.shortuuid}
+
+events:
+  root: WARN
+  export.slf4j.enabled: true

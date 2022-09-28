@@ -1,0 +1,10 @@
+version: '3.9'
+
+services:
+
+  mongo:
+    image: mongo
+    restart: always
+    container_name: mongodb-server
+    ports:
+      - "27018:27017"

@@ -9,5 +9,6 @@ include(
     "distributed-system",
     "cassandra",
     "elasticsearch",
-    "r2dbc-jasync"
+    "r2dbc-jasync",
+    "mongodb"
 )
