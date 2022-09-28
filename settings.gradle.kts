@@ -26,5 +26,6 @@ include(
     "cassandra",
     "elasticsearch",
     "r2dbc-jasync",
-    "mongodb"
+    "mongodb",
+    "influxdb"
 )
