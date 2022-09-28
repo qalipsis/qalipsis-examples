@@ -1,0 +1,10 @@
+campaign:
+  name: influxdb-${random.shortuuid}
+
+logging:
+  console: false
+  root: INFO
+
+events:
+  root: WARN
+  export.slf4j.enabled: true
