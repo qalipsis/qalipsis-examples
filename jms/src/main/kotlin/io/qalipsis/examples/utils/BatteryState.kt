@@ -14,20 +14,16 @@
  * permissions and limitations under the License.
  */
 
-rootProject.name = "qalipsis-examples"
+package io.qalipsis.examples.utils
 
-include(
-    "simple",
-    "cassandra",
-    "tcp-echo",
-    //"demo-microservice",
-    "quickstart1-http",
-    "distributed-system",
-    "cassandra",
-    "elasticsearch",
-    "r2dbc-jasync",
-    "mongodb",
-    "influxdb",
-    "kafka",
-    "jms"
-)
+import java.time.Instant
+
+data class BatteryState(
+    val deviceId: String = "",
+    val timestamp: Instant = Instant.now(),
+    val batteryLevel: Int = 0) {
+
+    fun primaryKey() = "$deviceId:$timestamp"
+
+}
+

@@ -14,39 +14,42 @@
  * permissions and limitations under the License.
  */
 
-package io.qalipsis.examples.kafka
+package io.qalipsis.examples.jms
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import io.kotest.assertions.asClue
+import io.kotest.assertions.assertSoftly
+import io.kotest.matchers.ints.shouldBeExactly
 import io.qalipsis.api.annotations.Scenario
 import io.qalipsis.api.executionprofile.regular
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.innerJoin
 import io.qalipsis.api.steps.map
+import io.qalipsis.api.steps.verify
 import io.qalipsis.examples.utils.BatteryState
 import io.qalipsis.examples.utils.ScenarioConfiguration
 import io.qalipsis.examples.utils.ServerConfiguration
 import io.qalipsis.plugins.jackson.csv.csvToObject
 import io.qalipsis.plugins.jackson.jackson
-import io.qalipsis.plugins.kafka.consumer.consume
-import io.qalipsis.plugins.kafka.kafka
-import io.qalipsis.plugins.kafka.producer.KafkaProducerRecord
-import io.qalipsis.plugins.kafka.producer.produce
-import io.qalipsis.plugins.kafka.serdes.jsonSerde
-import org.apache.kafka.clients.consumer.OffsetResetStrategy
-import org.apache.kafka.common.serialization.Serdes
-import java.time.Duration
+import io.qalipsis.plugins.jms.consumer.consume
+import io.qalipsis.plugins.jms.deserializer.JmsJsonDeserializer
+import io.qalipsis.plugins.jms.jms
+import io.qalipsis.plugins.jms.producer.JmsMessageType
+import io.qalipsis.plugins.jms.producer.JmsProducerRecord
+import io.qalipsis.plugins.jms.producer.produce
+import org.apache.activemq.ActiveMQConnectionFactory
+import org.apache.activemq.command.ActiveMQQueue
 
-@Suppress("DuplicatedCode")
-class KafkaProduceAndConsume {
+class JmsProduceAndConsume {
 
     private val objectMapper = ObjectMapper().also {
         it.registerModule(JavaTimeModule())
     }
 
-    @Scenario("kafka-produce-and-consume")
-    fun scenarioSaveAndPoll() {
+    @Scenario("jms-produce-and-consume")
+    fun scenarioProduceAndConsume() {
 
         //we define the scenario, set the name, number of minions and rampUp
         scenario {
@@ -69,46 +72,56 @@ class KafkaProduceAndConsume {
                 unicast()
             }
             .map { it.value } // we transform the output of the CSV reader entries to utils.BatteryState
-            .kafka()
-            .produce(
-                keySerializer = Serdes.String().serializer(),
-                valueSerializer = Serdes.String().serializer()
-            ) {
-                bootstrap(ServerConfiguration.SERVER_BOOTSTRAP)
-                clientName("producer")
+            .jms()
+            .produce {
+
+                connect {
+                    ActiveMQConnectionFactory(ServerConfiguration.SERVER_URL).createConnection()
+                }
+
                 records { _, input ->
                     listOf(
-                        KafkaProducerRecord(
-                            ServerConfiguration.TOPIC,
-                            value = objectMapper.writeValueAsString(input),
-                            key = input.primaryKey
+                        JmsProducerRecord(
+                            destination = ActiveMQQueue().createDestination(ServerConfiguration.QUEUE_NAME),
+                            messageType = JmsMessageType.BYTES,
+                            value = objectMapper.writeValueAsBytes(input)
                         )
                     )
                 }
             }
-            .map { it.input }
+            .map {
+                it.input
+            }
             .innerJoin(
                 using = { correlationRecord ->
-                    correlationRecord.value.primaryKey
+                    correlationRecord.value.primaryKey()
                 },
+
                 on = {
-                    it.kafka().consume {
-                        bootstrap(ServerConfiguration.SERVER_BOOTSTRAP)
-                        topics(ServerConfiguration.TOPIC) //Define which topic we want to listen
-                        groupId("kafka-example")
-                        offsetReset(OffsetResetStrategy.EARLIEST) //where we want to start consume. EARLIEST starts consuming messages from the beginning of the queue
-                        pollTimeout(Duration.ofSeconds(1))
+                    it.jms().consume {
+                        queues(ServerConfiguration.QUEUE_NAME)
+                        queueConnection { ActiveMQConnectionFactory(ServerConfiguration.SERVER_URL).createQueueConnection() }
                     }
-                        .flatten(Serdes.String().deserializer(), jsonSerde<BatteryState>().deserializer())
+                        .deserialize(JmsJsonDeserializer(targetClass = BatteryState::class))
                         .map { result ->
                             result.record.value
                         }
-                        .filterNotNull()
+
                 },
+
                 having = { correlationRecord ->
-                    correlationRecord.value.primaryKey
+                    correlationRecord.value.primaryKey()
                 }
             )
+            .filterNotNull()
+            .verify { result ->
+                result.asClue {
+                    assertSoftly {
+                        it.first.batteryLevel shouldBeExactly it.second.batteryLevel
+                    }
+                }
+            }
+
     }
 
 }

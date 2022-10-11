@@ -16,8 +16,6 @@
 
 package io.qalipsis.examples.utils
 
-class BatteryStateContract {
-    companion object {
-        const val INDEX = "battery-state"
-    }
+object BatteryStateContract {
+    const val INDEX = "battery-state"
 }
