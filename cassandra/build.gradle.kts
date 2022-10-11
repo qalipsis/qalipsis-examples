@@ -79,16 +79,4 @@ application {
     this.ext["workingDir"] = projectDir
 }
 
-tasks {
-    named<ShadowJar>("shadowJar") {
-        mergeServiceFiles()
-        transform(ServiceFileTransformer().also { it.setPath("META-INF/qalipsis/**") })
-        archiveClassifier.set("qalipsis")
-    }
-
-    build {
-        dependsOn(shadowJar)
-    }
-}
-
 val shadowJarName = "examples-${project.name}-${project.version}-qalipsis.jar"

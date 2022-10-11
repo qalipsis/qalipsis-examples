@@ -14,8 +14,7 @@
  * permissions and limitations under the License.
  */
 
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransformer
+
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -25,7 +24,7 @@ plugins {
     id("com.github.johnrengelman.shadow") version "7.1.1"
 }
 
-description = "Elasticsearch demo. Show how to do save & poll and save & search"
+description = "JMS demo. Show how to produce and consume"
 
 // Configure both compileKotlin and compileTestKotlin.
 tasks.withType<KotlinCompile>().configureEach {
@@ -48,28 +47,19 @@ dependencies {
     runtimeOnly("io.qalipsis:head")
     runtimeOnly("io.qalipsis:factory")
 
-    implementation("io.qalipsis.plugin:elasticsearch")
+    implementation("io.qalipsis.plugin:jms")
     implementation("io.qalipsis.plugin:jackson")
+    implementation("org.apache.activemq:activemq-all:5.4.2")
 
     implementation("io.kotest:kotest-assertions-core:5.4.2")
 }
 
-task<JavaExec>("runCampaignForSaveAndPoll") {
+task<JavaExec>("runCampaignForProduceAndConsume") {
     group = "application"
-    description = "Start a campaign with the scenario elasticsearch-save-and-poll"
+    description = "Start a campaign for jms-produce-and-consume scenario"
     mainClass.set("io.qalipsis.runtime.Qalipsis")
     maxHeapSize = "256m"
-    args("--autostart", "-c", "report.export.console.enabled=true", "-s", "elasticsearch-save-and-poll")
-    workingDir = projectDir
-    classpath = sourceSets["main"].runtimeClasspath
-}
-
-task<JavaExec>("runCampaignForSaveAndSearch") {
-    group = "application"
-    description = "Start a campaign with the scenario elasticsearch-save-and-search"
-    mainClass.set("io.qalipsis.runtime.Qalipsis")
-    maxHeapSize = "256m"
-    args("--autostart", "-c", "report.export.console.enabled=true", "-s", "elasticsearch-save-and-search")
+    args("--autostart", "-c", "report.export.console.enabled=true", "-s", "jms-produce-and-consume")
     workingDir = projectDir
     classpath = sourceSets["main"].runtimeClasspath
 }

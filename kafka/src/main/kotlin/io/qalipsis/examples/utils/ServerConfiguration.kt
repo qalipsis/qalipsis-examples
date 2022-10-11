@@ -16,10 +16,7 @@
 
 package io.qalipsis.examples.utils
 
-class ServerConfiguration {
-    companion object {
-        const val SERVER_BOOTSTRAP = "localhost:9092"
-        const val NUMBER_MINION = 20
-        const val TOPIC = "battery_state"
-    }
+object ServerConfiguration {
+    const val SERVER_BOOTSTRAP = "localhost:9092"
+    const val TOPIC = "battery_state"
 }

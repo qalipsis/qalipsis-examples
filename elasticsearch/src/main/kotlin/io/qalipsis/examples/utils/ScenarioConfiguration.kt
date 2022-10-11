@@ -16,8 +16,6 @@
 
 package io.qalipsis.examples.utils
 
-class ScenarioConfiguration {
-    companion object {
-        const val NUMBER_MINION = 10
-    }
+object ScenarioConfiguration {
+    const val NUMBER_MINION = 10
 }

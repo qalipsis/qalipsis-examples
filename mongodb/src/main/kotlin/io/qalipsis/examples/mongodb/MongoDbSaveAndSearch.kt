@@ -30,7 +30,7 @@ import io.qalipsis.api.steps.verify
 import io.qalipsis.examples.utils.BatteryState
 import io.qalipsis.examples.utils.BatteryStateContract
 import io.qalipsis.examples.utils.DatabaseConfiguration
-import io.qalipsis.examples.utils.DatabaseConfiguration.Companion.NUMBER_MINION
+import io.qalipsis.examples.utils.ScenarioConfiguration.NUMBER_MINION
 import io.qalipsis.plugins.jackson.csv.csvToObject
 import io.qalipsis.plugins.jackson.jackson
 import io.qalipsis.plugins.mongodb.mongodb

@@ -1,19 +1,3 @@
-/*
- * Copyright 2022 AERIS IT Solutions GmbH
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
- * or implied. See the License for the specific language governing
- * permissions and limitations under the License.
- */
-
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransformer
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -25,7 +9,7 @@ plugins {
     id("com.github.johnrengelman.shadow") version "7.1.1"
 }
 
-description = "Elasticsearch demo. Show how to do save & poll and save & search"
+description = "R2dbc demo. Show how to do save & poll and save & search"
 
 // Configure both compileKotlin and compileTestKotlin.
 tasks.withType<KotlinCompile>().configureEach {
@@ -48,7 +32,7 @@ dependencies {
     runtimeOnly("io.qalipsis:head")
     runtimeOnly("io.qalipsis:factory")
 
-    implementation("io.qalipsis.plugin:elasticsearch")
+    implementation("io.qalipsis.plugin:r2dbc-jasync")
     implementation("io.qalipsis.plugin:jackson")
 
     implementation("io.kotest:kotest-assertions-core:5.4.2")
@@ -56,20 +40,20 @@ dependencies {
 
 task<JavaExec>("runCampaignForSaveAndPoll") {
     group = "application"
-    description = "Start a campaign with the scenario elasticsearch-save-and-poll"
+    description = "Start a campaign for the r2dbc-jasync-save-and-poll scenario"
     mainClass.set("io.qalipsis.runtime.Qalipsis")
     maxHeapSize = "256m"
-    args("--autostart", "-c", "report.export.console.enabled=true", "-s", "elasticsearch-save-and-poll")
+    args("--autostart", "-c", "report.export.console.enabled=true", "-s", "r2dbc-jasync-save-and-poll")
     workingDir = projectDir
     classpath = sourceSets["main"].runtimeClasspath
 }
 
 task<JavaExec>("runCampaignForSaveAndSearch") {
     group = "application"
-    description = "Start a campaign with the scenario elasticsearch-save-and-search"
+    description = "Start a campaign for the r2dbc-jasync-save-and-search scenario"
     mainClass.set("io.qalipsis.runtime.Qalipsis")
     maxHeapSize = "256m"
-    args("--autostart", "-c", "report.export.console.enabled=true", "-s", "elasticsearch-save-and-search")
+    args("--autostart", "-c", "report.export.console.enabled=true", "-s", "r2dbc-jasync-save-and-search")
     workingDir = projectDir
     classpath = sourceSets["main"].runtimeClasspath
 }

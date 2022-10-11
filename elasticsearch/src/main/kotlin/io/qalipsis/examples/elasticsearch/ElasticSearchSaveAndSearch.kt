@@ -30,7 +30,7 @@ import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.verify
 import io.qalipsis.examples.utils.BatteryState
 import io.qalipsis.examples.utils.BatteryStateContract
-import io.qalipsis.examples.utils.ScenarioConfiguration.Companion.NUMBER_MINION
+import io.qalipsis.examples.utils.ScenarioConfiguration.NUMBER_MINION
 import io.qalipsis.plugins.elasticsearch.Document
 import io.qalipsis.plugins.elasticsearch.elasticsearch
 import io.qalipsis.plugins.elasticsearch.save.save

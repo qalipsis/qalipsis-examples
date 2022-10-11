@@ -28,11 +28,11 @@ import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.verify
 import io.qalipsis.examples.utils.BatteryState
 import io.qalipsis.examples.utils.BatteryStateContract
-import io.qalipsis.examples.utils.DatabaseConfiguration.Companion.DATACENTER_NAME
-import io.qalipsis.examples.utils.DatabaseConfiguration.Companion.KEYSPACE
-import io.qalipsis.examples.utils.DatabaseConfiguration.Companion.NUMBER_MINION
-import io.qalipsis.examples.utils.DatabaseConfiguration.Companion.SERVERS
-import io.qalipsis.examples.utils.DatabaseConfiguration.Companion.TABLE_NAME
+import io.qalipsis.examples.utils.DatabaseConfiguration.DATACENTER_NAME
+import io.qalipsis.examples.utils.DatabaseConfiguration.KEYSPACE
+import io.qalipsis.examples.utils.ScenarioConfiguration.NUMBER_MINION
+import io.qalipsis.examples.utils.DatabaseConfiguration.SERVERS
+import io.qalipsis.examples.utils.DatabaseConfiguration.TABLE_NAME
 import io.qalipsis.plugins.cassandra.cassandra
 import io.qalipsis.plugins.cassandra.poll.poll
 import io.qalipsis.plugins.cassandra.save.CassandraSaveRow
