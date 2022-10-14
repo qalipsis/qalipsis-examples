@@ -1,0 +1,12 @@
+version: '3.9'
+
+services:
+  redis:
+    image: 'bitnami/redis:latest'
+    ports:
+      - "17000:7000"
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_PORT_NUMBER=7000
+    volumes:
+      - './volumes/redis:/bitnami'

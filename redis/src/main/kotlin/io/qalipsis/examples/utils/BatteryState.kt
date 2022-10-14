@@ -14,22 +14,24 @@
  * permissions and limitations under the License.
  */
 
-rootProject.name = "qalipsis-examples"
+package io.qalipsis.examples.utils
 
-include(
-    "simple",
-    "cassandra",
-    "tcp-echo",
-    //"demo-microservice",
-    "quickstart1-http",
-    "distributed-system",
-    "cassandra",
-    "elasticsearch",
-    "r2dbc-jasync",
-    "mongodb",
-    "influxdb",
-    "kafka",
-    "redis",
-    "rabbitmq",
-    "jms"
-)
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
+import java.time.Instant
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class BatteryState(
+
+    @field:JsonProperty(BatteryStateContract.DEVICE_ID)
+    val deviceId: String = "",
+
+    @field:JsonProperty(BatteryStateContract.TIMESTAMP)
+    val timestamp: Instant = Instant.ofEpochMilli(0),
+
+    @field:JsonProperty(BatteryStateContract.BATTERY_LEVEL)
+    val batteryLevel: Int = 0
+) {
+    fun primaryKey() = "$deviceId:$timestamp"
+}
+

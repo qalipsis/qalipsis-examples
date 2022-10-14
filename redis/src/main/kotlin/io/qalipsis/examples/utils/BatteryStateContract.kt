@@ -14,22 +14,14 @@
  * permissions and limitations under the License.
  */
 
-rootProject.name = "qalipsis-examples"
+package io.qalipsis.examples.utils
 
-include(
-    "simple",
-    "cassandra",
-    "tcp-echo",
-    //"demo-microservice",
-    "quickstart1-http",
-    "distributed-system",
-    "cassandra",
-    "elasticsearch",
-    "r2dbc-jasync",
-    "mongodb",
-    "influxdb",
-    "kafka",
-    "redis",
-    "rabbitmq",
-    "jms"
-)
+object BatteryStateContract {
+
+    const val KEY_FOR_SAVE_AND_POLL = "battery_state_save_and_poll"
+    const val KEY_FOR_PRODUCE_AND_CONSUME = "battery_state_produce_and_consume"
+    const val DEVICE_ID = "device_id"
+    const val TIMESTAMP = "timestamp"
+    const val BATTERY_LEVEL = "battery_level"
+
+}
