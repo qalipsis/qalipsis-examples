@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: 'rabbitmq'
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - ./volume/data/:/var/lib/rabbitmq/
+      - ./volume/logs/:/var/log/rabbitmq/
+    environment:
+      RABBITMQ_DEFAULT_USER: qalipsis
+      RABBITMQ_DEFAULT_PASS: qalipsis

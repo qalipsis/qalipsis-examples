@@ -1,0 +1,10 @@
+campaign:
+  name: rabbitmq-${random.shortuuid}
+
+logging:
+  console: true
+  root: INFO
+
+events:
+  root: WARN
+  export.slf4j.enabled: true
