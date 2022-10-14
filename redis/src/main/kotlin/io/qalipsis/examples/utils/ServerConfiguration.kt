@@ -14,22 +14,13 @@
  * permissions and limitations under the License.
  */
 
-rootProject.name = "qalipsis-examples"
+package io.qalipsis.examples.utils
 
-include(
-    "simple",
-    "cassandra",
-    "tcp-echo",
-    //"demo-microservice",
-    "quickstart1-http",
-    "distributed-system",
-    "cassandra",
-    "elasticsearch",
-    "r2dbc-jasync",
-    "mongodb",
-    "influxdb",
-    "kafka",
-    "redis",
-    "rabbitmq",
-    "jms"
-)
+object ServerConfiguration{
+
+    val NODES = listOf("localhost:17000")
+    const val DATABASE = 0
+    const val USER_NAME = ""
+    const val PASSWORD = "default_password"
+
+}

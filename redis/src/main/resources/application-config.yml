@@ -1,0 +1,2 @@
+campaign:
+  name: redis-${random.shortuuid}
