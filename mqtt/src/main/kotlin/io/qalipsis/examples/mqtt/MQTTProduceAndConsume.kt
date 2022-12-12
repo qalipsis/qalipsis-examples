@@ -37,8 +37,7 @@ class MQTTProduceAndConsume {
             profile {
                 regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
             }
-        }
-            .start()
+        }.start()
             .jackson() //we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
             .csvToObject(BatteryState::class) {
 
@@ -50,10 +49,8 @@ class MQTTProduceAndConsume {
                     column("batteryLevel").integer()
                 }
                 unicast()
-            }
-            .map { it.value } // we transform the output of the CSV reader entries to utils.BatteryState
-            .netty()
-            .mqttPublish {
+            }.map { it.value } // we transform the output of the CSV reader entries to utils.BatteryState
+            .netty().mqttPublish {
                 connect {
                     host = ServerConfiguration.HOST
                     port = ServerConfiguration.PORT
@@ -69,44 +66,30 @@ class MQTTProduceAndConsume {
                         )
                     )
                 }
-            }
-            .map { it.input }
-            .innerJoin(
-                using = { correlationRecord ->
-                    println("Using ${correlationRecord.value}")
-                    correlationRecord.value.primaryKey
-                },
-                on = {
-                    it.netty()
-                        .mqttSubscribe {
-                            connect {
-                                host = ServerConfiguration.HOST
-                                port = ServerConfiguration.PORT
-                            }
-                            topicFilter(ServerConfiguration.TOPIC_NAME)
+            }.map { it.input }.innerJoin(using = { correlationRecord ->
+                println("Using ${correlationRecord.value}")
+                correlationRecord.value.primaryKey
+            }, on = {
+                it.netty().mqttSubscribe {
+                        connect {
+                            host = ServerConfiguration.HOST
+                            port = ServerConfiguration.PORT
                         }
-                        .deserialize(MessageJsonDeserializer(BatteryState::class))
-                        .map { result ->
-                            println("on ${result.value}")
-                            result.value
-                        }
-                        .filterNotNull()
-                },
-                having = { correlationRecord ->
-                    println("Having ${correlationRecord.value}")
-                    correlationRecord.value.primaryKey
-                }
-            )
-            .filterNotNull()
-            .verify { result ->
+                        topicFilter(ServerConfiguration.TOPIC_NAME)
+                    }.deserialize(MessageJsonDeserializer(BatteryState::class)).map { result ->
+                        println("on ${result.value}")
+                        result.value
+                    }.filterNotNull()
+            }, having = { correlationRecord ->
+                println("Having ${correlationRecord.value}")
+                correlationRecord.value.primaryKey
+            }).filterNotNull().verify { result ->
                 result.asClue {
                     assertSoftly {
                         it.first.batteryLevel shouldBeExactly (it.second).batteryLevel
                     }
                 }
             }
-
-
     }
 
 }

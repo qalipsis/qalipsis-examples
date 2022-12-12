@@ -31,6 +31,6 @@ include(
     "kafka",
     "redis",
     "rabbitmq",
-    "jms"
+    "jms",
+    "mqtt"
 )
-include("mqtt")
