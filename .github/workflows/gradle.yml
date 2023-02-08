@@ -43,6 +43,10 @@ jobs:
       - name: Compile
         run: ./gradlew clean build
 
+      - name: Check licenses
+        run: ./gradlew checkLicense
+        if: always()
+
       - name: Upload JARs
         uses: actions/upload-artifact@v2
         if: always()
