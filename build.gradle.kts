@@ -33,6 +33,18 @@ plugins {
     id("nebula.maven-manifest") version "18.4.0"
     signing
     id("com.palantir.docker") version "0.28.0" apply false
+    id ("com.github.jk1.dependency-license-report") version "1.17"
+}
+
+licenseReport {
+    renderers = arrayOf<com.github.jk1.license.render.ReportRenderer>(
+        com.github.jk1.license.render.InventoryHtmlReportRenderer(
+            "report.html",
+            "QALIPSIS Examples"
+        )
+    )
+    allowedLicensesFile = File("$projectDir/build-config/allowed-licenses.json")
+    filters = arrayOf<com.github.jk1.license.filter.DependencyFilter>(com.github.jk1.license.filter.LicenseBundleNormalizer())
 }
 
 description = "QALIPSIS Examples"
