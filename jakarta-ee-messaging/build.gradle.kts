@@ -39,15 +39,15 @@ kapt {
 }
 
 dependencies {
-    implementation(platform("io.qalipsis:qalipsis-platform:0.5.d-SNAPSHOT"))
-    kapt(platform("io.qalipsis:qalipsis-platform:0.5.d-SNAPSHOT"))
+    implementation(platform("io.qalipsis:qalipsis-platform:0.5.a-SNAPSHOT"))
+    kapt(platform("io.qalipsis:qalipsis-platform:0.5.a-SNAPSHOT"))
     kapt("io.qalipsis:api-processors")
 
     runtimeOnly("io.qalipsis:runtime")
     runtimeOnly("io.qalipsis:head")
     runtimeOnly("io.qalipsis:factory")
 
-    implementation("io.qalipsis.plugin:jakarta-ee-messaging")
+    implementation("io.qalipsis.plugin:jakarta-ee-messaging:0.5.5-SNAPSHOT")
     implementation("io.qalipsis.plugin:jackson")
     implementation("org.apache.activemq:artemis-jakarta-client:2.26.0")
 

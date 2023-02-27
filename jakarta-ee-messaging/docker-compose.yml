@@ -10,5 +10,5 @@ services:
       - "61616:61616"
       - "18161:8161"
     environment:
-      - ARTEMIS_USERNAME:qalipsis_user
-      - ARTEMIS_PASSWORD:qalipsis_password
+      ARTEMIS_USERNAME: "qalipsis_user"
+      ARTEMIS_PASSWORD: "qalipsis_password"

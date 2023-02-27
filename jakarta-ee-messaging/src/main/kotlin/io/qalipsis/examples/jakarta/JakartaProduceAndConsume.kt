@@ -19,14 +19,14 @@ import io.qalipsis.plugins.jackson.csv.csvToObject
 import io.qalipsis.plugins.jackson.jackson
 import io.qalipsis.plugins.jakarta.consumer.consume
 import io.qalipsis.plugins.jakarta.deserializer.JakartaJsonDeserializer
+import io.qalipsis.plugins.jakarta.destination.Queue
 import io.qalipsis.plugins.jakarta.jakarta
 import io.qalipsis.plugins.jakarta.producer.JakartaMessageType
 import io.qalipsis.plugins.jakarta.producer.JakartaProducerRecord
 import io.qalipsis.plugins.jakarta.producer.produce
+import jakarta.jms.Connection
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory
-import org.apache.activemq.artemis.jms.client.ActiveMQDestination
-import org.apache.activemq.artemis.jms.client.ActiveMQQueue
 
 class JakartaProduceAndConsume {
 
@@ -36,12 +36,15 @@ class JakartaProduceAndConsume {
 
     private lateinit var factory: ActiveMQConnectionFactory
 
+    private lateinit var connection: Connection
+
     @OptIn(ExperimentalCoroutinesApi::class)
     @Scenario("jakarta-produce-and-consume")
     fun scenarioProduceAndConsume() {
 
         factory = ActiveMQConnectionFactory(ServerConfiguration.SERVER_URL, ServerConfiguration.CONTAINER_USERNAME, ServerConfiguration.CONTAINER_PASSWORD)
 
+        connection = factory.createConnection()
 
         //we define the scenario, set the name, number of minions and rampUp
         scenario {
@@ -68,13 +71,17 @@ class JakartaProduceAndConsume {
             .produce {
 
                 connect {
-                    factory.createConnection()
+                    connection
+                }
+
+                session {
+                    connection.createSession()
                 }
 
                 records { _, input ->
                     listOf(
                         JakartaProducerRecord(
-                            destination = ActiveMQQueue.createDestination(ServerConfiguration.QUEUE_NAME, ActiveMQDestination.TYPE.DESTINATION),
+                            destination = Queue(ServerConfiguration.QUEUE_NAME),
                             messageType = JakartaMessageType.BYTES,
                             value = objectMapper.writeValueAsBytes(input)
                         )
@@ -93,7 +100,7 @@ class JakartaProduceAndConsume {
                 on = {
                     it.jakarta().consume {
                         queues(ServerConfiguration.QUEUE_NAME)
-                        queueConnection {  ActiveMQConnectionFactory(ServerConfiguration.SERVER_URL, ServerConfiguration.CONTAINER_USERNAME, ServerConfiguration.CONTAINER_PASSWORD).createQueueConnection() }
+                        queueConnection {  factory.createQueueConnection() }
                     }
                         .deserialize(JakartaJsonDeserializer(targetClass = BatteryState::class))
                         .map { result ->

@@ -19,6 +19,7 @@ package io.qalipsis.examples.utils
 object ServerConfiguration {
     const val SERVER_URL = "tcp://localhost:61616"
     const val QUEUE_NAME = "battery_state"
+    const val TOPIC_NAME = "battery_state"
     const val CONTAINER_USERNAME = "qalipsis_user"
     const val CONTAINER_PASSWORD = "qalipsis_password"
 }
