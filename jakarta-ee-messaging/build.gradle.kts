@@ -47,19 +47,29 @@ dependencies {
     runtimeOnly("io.qalipsis:head")
     runtimeOnly("io.qalipsis:factory")
 
-    implementation("io.qalipsis.plugin:jakarta-ee-messaging:0.5.5-SNAPSHOT")
+    implementation("io.qalipsis.plugin:jakarta-ee-messaging:0.5.6-SNAPSHOT")
     implementation("io.qalipsis.plugin:jackson")
     implementation("org.apache.activemq:artemis-jakarta-client:2.26.0")
 
     implementation("io.kotest:kotest-assertions-core:5.4.2")
 }
 
-task<JavaExec>("runCampaignForProduceAndConsume") {
+task<JavaExec>("runCampaignForProduceAndConsumeFromQueue") {
     group = "application"
     description = "Start a campaign for jakarta-produce-and-consume scenario"
     mainClass.set("io.qalipsis.runtime.Qalipsis")
     maxHeapSize = "256m"
-    args("--autostart", "-c", "report.export.console.enabled=true", "-s", "jakarta-produce-and-consume")
+    args("--autostart", "-c", "report.export.console.enabled=true", "-s", "jakarta-produce-and-consume-from-queue")
+    workingDir = projectDir
+    classpath = sourceSets["main"].runtimeClasspath
+}
+
+task<JavaExec>("runCampaignForProduceAndConsumeFromTopic") {
+    group = "application"
+    description = "Start a campaign for jakarta-produce-and-consume scenario"
+    mainClass.set("io.qalipsis.runtime.Qalipsis")
+    maxHeapSize = "256m"
+    args("--autostart", "-c", "report.export.console.enabled=true", "-s", "jakarta-produce-and-consume-from-topic")
     workingDir = projectDir
     classpath = sourceSets["main"].runtimeClasspath
 }

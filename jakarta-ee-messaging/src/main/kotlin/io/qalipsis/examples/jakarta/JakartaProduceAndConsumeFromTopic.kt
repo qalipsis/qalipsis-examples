@@ -20,31 +20,27 @@ import io.qalipsis.plugins.jackson.jackson
 import io.qalipsis.plugins.jakarta.consumer.consume
 import io.qalipsis.plugins.jakarta.deserializer.JakartaJsonDeserializer
 import io.qalipsis.plugins.jakarta.destination.Queue
+import io.qalipsis.plugins.jakarta.destination.Topic
 import io.qalipsis.plugins.jakarta.jakarta
 import io.qalipsis.plugins.jakarta.producer.JakartaMessageType
 import io.qalipsis.plugins.jakarta.producer.JakartaProducerRecord
 import io.qalipsis.plugins.jakarta.producer.produce
-import jakarta.jms.Connection
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory
 
-class JakartaProduceAndConsume {
+class JakartaProduceAndConsumeFromTopic {
 
     private val objectMapper = ObjectMapper().also {
         it.registerModule(JavaTimeModule())
     }
 
-    private lateinit var factory: ActiveMQConnectionFactory
-
-    private lateinit var connection: Connection
-
     @OptIn(ExperimentalCoroutinesApi::class)
-    @Scenario("jakarta-produce-and-consume")
-    fun scenarioProduceAndConsume() {
+    @Scenario("jakarta-produce-and-consume-from-topic")
+    fun scenarioProduceAndConsumeFromTopic() {
 
-        factory = ActiveMQConnectionFactory(ServerConfiguration.SERVER_URL, ServerConfiguration.CONTAINER_USERNAME, ServerConfiguration.CONTAINER_PASSWORD)
+        val factory = ActiveMQConnectionFactory(ServerConfiguration.SERVER_URL, ServerConfiguration.CONTAINER_USERNAME, ServerConfiguration.CONTAINER_PASSWORD)
 
-        connection = factory.createConnection()
+        val connection = factory.createConnection()
 
         //we define the scenario, set the name, number of minions and rampUp
         scenario {
@@ -81,7 +77,7 @@ class JakartaProduceAndConsume {
                 records { _, input ->
                     listOf(
                         JakartaProducerRecord(
-                            destination = Queue(ServerConfiguration.QUEUE_NAME),
+                            destination = Topic(ServerConfiguration.TOPIC_NAME),
                             messageType = JakartaMessageType.BYTES,
                             value = objectMapper.writeValueAsBytes(input)
                         )
@@ -99,8 +95,8 @@ class JakartaProduceAndConsume {
 
                 on = {
                     it.jakarta().consume {
-                        queues(ServerConfiguration.QUEUE_NAME)
-                        queueConnection {  factory.createQueueConnection() }
+                        topics(ServerConfiguration.TOPIC_NAME)
+                        topicConnection {  factory.createTopicConnection() }
                     }
                         .deserialize(JakartaJsonDeserializer(targetClass = BatteryState::class))
                         .map { result ->
