@@ -19,7 +19,6 @@ import io.qalipsis.plugins.jackson.csv.csvToObject
 import io.qalipsis.plugins.jackson.jackson
 import io.qalipsis.plugins.jakarta.consumer.consume
 import io.qalipsis.plugins.jakarta.deserializer.JakartaJsonDeserializer
-import io.qalipsis.plugins.jakarta.destination.Queue
 import io.qalipsis.plugins.jakarta.destination.Topic
 import io.qalipsis.plugins.jakarta.jakarta
 import io.qalipsis.plugins.jakarta.producer.JakartaMessageType
