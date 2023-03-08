@@ -17,8 +17,6 @@ import io.qalipsis.plugins.jackson.csv.csvToObject
 import io.qalipsis.plugins.jackson.jackson
 import io.qalipsis.plugins.netty.mqtt.publisher.MqttPublishRecord
 import io.qalipsis.plugins.netty.mqtt.publisher.spec.mqttPublish
-import io.qalipsis.plugins.netty.mqtt.spec.MqttQoS
-import io.qalipsis.plugins.netty.mqtt.spec.MqttVersion
 import io.qalipsis.plugins.netty.mqtt.subscriber.spec.mqttSubscribe
 import io.qalipsis.plugins.netty.netty
 
@@ -75,6 +73,7 @@ class MQTTProduceAndConsume {
                             host = ServerConfiguration.HOST
                             port = ServerConfiguration.PORT
                         }
+                        clientName("qalipsis-mqtt-client-subscriber")
                         topicFilter(ServerConfiguration.TOPIC_NAME)
                     }.deserialize(MessageJsonDeserializer(BatteryState::class)).map { result ->
                         println("on ${result.value}")
