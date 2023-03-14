@@ -14,23 +14,8 @@
  * permissions and limitations under the License.
  */
 
-rootProject.name = "qalipsis-examples"
+package io.qalipsis.examples.utils
 
-include(
-    "simple",
-    "cassandra",
-    "tcp-echo",
-    //"demo-microservice",
-    "quickstart1-http",
-    "distributed-system",
-    "cassandra",
-    "elasticsearch",
-    "r2dbc-jasync",
-    "mongodb",
-    "influxdb",
-    "kafka",
-    "redis",
-    "rabbitmq",
-    "jms",
-    "mqtt"
-)
+object ScenarioConfiguration {
+    const val NUMBER_MINION = 20
+}

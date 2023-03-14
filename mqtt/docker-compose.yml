@@ -1,0 +1,13 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto
+    volumes:
+      - ./config/:/mosquitto/config/:ro
+      - ./log/:/mosquitto/log/
+      - data:/mosquitto/data/
+    ports:
+      - 11883:1883
+      - 19001:9001
+
+volumes:
+  data: ~
