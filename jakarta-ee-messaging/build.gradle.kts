@@ -47,7 +47,7 @@ dependencies {
     runtimeOnly("io.qalipsis:head")
     runtimeOnly("io.qalipsis:factory")
 
-    implementation("io.qalipsis.plugin:jakarta-ee-messaging:0.5.6-SNAPSHOT")
+    implementation("io.qalipsis.plugin:jakarta-ee-messaging:0.5.7-SNAPSHOT")
     implementation("io.qalipsis.plugin:jackson")
     implementation("org.apache.activemq:artemis-jakarta-client:2.26.0")
 
