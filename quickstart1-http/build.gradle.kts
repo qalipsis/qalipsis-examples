@@ -37,15 +37,15 @@ tasks.withType<KotlinCompile>().configureEach {
 val assertkVersion: String by project
 
 dependencies {
-    implementation(enforcedPlatform("io.qalipsis:qalipsis-platform:0.5.a-SNAPSHOT"))
-    kapt(enforcedPlatform("io.qalipsis:qalipsis-platform:0.5.a-SNAPSHOT"))
-    kapt("io.qalipsis:api-processors")
+    implementation(enforcedPlatform("io.qalipsis:qalipsis-platform:0.6.a-SNAPSHOT"))
+    kapt(enforcedPlatform("io.qalipsis:qalipsis-platform:0.6.a-SNAPSHOT"))
+    kapt("io.qalipsis:qalipsis-api-processors")
 
-    runtimeOnly("io.qalipsis:runtime")
-    runtimeOnly("io.qalipsis:head")
-    runtimeOnly("io.qalipsis:factory")
+    runtimeOnly("io.qalipsis:qalipsis-runtime")
+    runtimeOnly("io.qalipsis:qalipsis-head")
+    runtimeOnly("io.qalipsis:qalipsis-factory")
 
-    implementation("io.qalipsis.plugin:netty")
+    implementation("io.qalipsis.plugin:qalipsis-plugin-netty")
 
     implementation("io.kotest:kotest-assertions-core:5.4.2")
 }

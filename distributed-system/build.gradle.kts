@@ -43,14 +43,14 @@ kapt {
 }
 
 dependencies {
-    implementation(platform("io.qalipsis:qalipsis-platform:0.5.a-SNAPSHOT"))
-    kapt(platform("io.qalipsis:qalipsis-platform:0.5.a-SNAPSHOT"))
-    kapt("io.qalipsis:api-processors")
+    implementation(platform("io.qalipsis:qalipsis-platform:0.6.a-SNAPSHOT"))
+    kapt(platform("io.qalipsis:qalipsis-platform:0.6.a-SNAPSHOT"))
+    kapt("io.qalipsis:qalipsis-api-processors")
 
-    implementation("io.qalipsis.plugin:netty")
-    implementation("io.qalipsis.plugin:kafka")
-    implementation("io.qalipsis.plugin:elasticsearch")
-    implementation("io.qalipsis.plugin:r2dbc-jasync")
+    implementation("io.qalipsis.plugin:qalipsis-plugin-netty")
+    implementation("io.qalipsis.plugin:qalipsis-plugin-kafka")
+    implementation("io.qalipsis.plugin:qalipsis-plugin-elasticsearch")
+    implementation("io.qalipsis.plugin:qalipsis-plugin-r2dbc-jasync")
 
     implementation("com.willowtreeapps.assertk:assertk:$assertkVersion")
 }

@@ -40,16 +40,16 @@ kapt {
 }
 
 dependencies {
-    implementation(platform("io.qalipsis:qalipsis-platform:0.5.a-SNAPSHOT"))
-    kapt(platform("io.qalipsis:qalipsis-platform:0.5.a-SNAPSHOT"))
-    kapt("io.qalipsis:api-processors")
+    implementation(platform("io.qalipsis:qalipsis-platform:0.6.a-SNAPSHOT"))
+    kapt(platform("io.qalipsis:qalipsis-platform:0.6.a-SNAPSHOT"))
+    kapt("io.qalipsis:qalipsis-api-processors")
 
-    runtimeOnly("io.qalipsis:runtime")
-    runtimeOnly("io.qalipsis:head")
-    runtimeOnly("io.qalipsis:factory")
+    runtimeOnly("io.qalipsis:qalipsis-runtime")
+    runtimeOnly("io.qalipsis:qalipsis-head")
+    runtimeOnly("io.qalipsis:qalipsis-factory")
 
-    implementation("io.qalipsis.plugin:cassandra")
-    implementation("io.qalipsis.plugin:jackson")
+    implementation("io.qalipsis.plugin:qalipsis-plugin-cassandra")
+    implementation("io.qalipsis.plugin:qalipsis-plugin-jackson")
 
     implementation("io.kotest:kotest-assertions-core:5.4.2")
 }
