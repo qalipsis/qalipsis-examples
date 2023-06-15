@@ -184,6 +184,62 @@
     {
       "moduleLicense": ".*",
       "moduleName": "org.json:json"
+    },
+    {
+      "moduleLicense": ".*",
+      "moduleName": "com.google.protobuf:protobuf-bom"
+    },
+    {
+      "moduleLicense": ".*",
+      "moduleName": "io.grpc:grpc-bom"
+    },
+    {
+      "moduleLicense": ".*",
+      "moduleName": "io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom"
+    },
+    {
+      "moduleLicense": ".*",
+      "moduleName": "io.zipkin.brave:brave-bom"
+    },
+    {
+      "moduleLicense": ".*",
+      "moduleName": "io.zipkin.reporter2:zipkin-reporter-bom"
+    },
+    {
+      "moduleLicense": ".*",
+      "moduleName": "org.apache.logging.log4j:log4j-bom"
+    },
+    {
+      "moduleLicense": ".*",
+      "moduleName": "com.lowagie:itext"
+    },
+    {
+      "moduleLicense": ".*",
+      "moduleName": "org.bouncycastle:bcmail-jdk14"
+    },
+    {
+      "moduleLicense": ".*",
+      "moduleName": "org.bouncycastle:bcpkix-jdk14"
+    },
+    {
+      "moduleLicense": ".*",
+      "moduleName": "org.bouncycastle:bcprov-jdk14"
+    },
+    {
+      "moduleLicense": ".*",
+      "moduleName": "org.bouncycastle:bctsp-jdk14"
+    },
+    {
+      "moduleLicense": ".*",
+      "moduleName": "org.jfree:jcommon"
+    },
+    {
+      "moduleLicense": ".*",
+      "moduleName": "org.jfree:org.jfree.svg"
+    },
+    {
+      "moduleLicense": ".*",
+      "moduleName": "org.jfree:jfreechart"
     }
   ]
 }

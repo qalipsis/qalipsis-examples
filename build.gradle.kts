@@ -22,18 +22,18 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent.STANDARD_ERROR
 plugins {
     java
     idea
-    kotlin("jvm") version "1.6.21"
-    kotlin("kapt") version "1.6.21"
-    kotlin("plugin.allopen") version "1.6.21"
+    kotlin("jvm") version "1.8.21"
+    kotlin("kapt") version "1.8.21"
+    kotlin("plugin.allopen") version "1.8.21"
 
     id("nebula.contacts") version "6.0.0"
-    id("nebula.info") version "11.3.3"
+    id("nebula.info") version "11.4.1"
     id("nebula.maven-publish") version "18.4.0"
     id("nebula.maven-scm") version "18.4.0"
     id("nebula.maven-manifest") version "18.4.0"
     signing
     id("com.palantir.docker") version "0.28.0" apply false
-    id ("com.github.jk1.dependency-license-report") version "1.17"
+    id("com.github.jk1.dependency-license-report") version "1.17"
 }
 
 licenseReport {
@@ -44,7 +44,8 @@ licenseReport {
         )
     )
     allowedLicensesFile = File("$projectDir/build-config/allowed-licenses.json")
-    filters = arrayOf<com.github.jk1.license.filter.DependencyFilter>(com.github.jk1.license.filter.LicenseBundleNormalizer())
+    filters =
+        arrayOf<com.github.jk1.license.filter.DependencyFilter>(com.github.jk1.license.filter.LicenseBundleNormalizer())
 }
 
 description = "QALIPSIS Examples"
@@ -90,7 +91,6 @@ allprojects {
     repositories {
         mavenLocal()
         mavenCentral()
-        jcenter()
         maven {
             name = "maven-central-snapshots"
             setUrl("https://oss.sonatype.org/content/repositories/snapshots")
@@ -196,6 +196,6 @@ val testTasks = subprojects.flatMap {
 
 tasks.register("testReport", TestReport::class) {
     this.group = "verification"
-    destinationDir = file("${buildDir}/reports/tests")
-    reportOn(*(testTasks.toTypedArray()))
+    destinationDirectory.set(file("${buildDir}/reports/tests"))
+    testResults.from(*(testTasks.toTypedArray()))
 }

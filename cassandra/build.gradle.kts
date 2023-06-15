@@ -15,7 +15,6 @@
  */
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransformer
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -39,9 +38,14 @@ kapt {
     includeCompileClasspath = true
 }
 
+// Enable the zip64 extension for shadowJar task.
+tasks.withType<ShadowJar> {
+    isZip64 = true
+}
+
 dependencies {
-    implementation(platform("io.qalipsis:qalipsis-platform:0.6.a-SNAPSHOT"))
-    kapt(platform("io.qalipsis:qalipsis-platform:0.6.a-SNAPSHOT"))
+    implementation(platform("io.qalipsis:qalipsis-platform:0.7.a-SNAPSHOT"))
+    kapt(platform("io.qalipsis:qalipsis-platform:0.7.a-SNAPSHOT"))
     kapt("io.qalipsis:qalipsis-api-processors")
 
     runtimeOnly("io.qalipsis:qalipsis-runtime")

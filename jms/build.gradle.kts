@@ -39,8 +39,8 @@ kapt {
 }
 
 dependencies {
-    implementation(platform("io.qalipsis:qalipsis-platform:0.6.a-SNAPSHOT"))
-    kapt(platform("io.qalipsis:qalipsis-platform:0.6.a-SNAPSHOT"))
+    implementation(platform("io.qalipsis:qalipsis-platform:0.7.a-SNAPSHOT"))
+    kapt(platform("io.qalipsis:qalipsis-platform:0.7.a-SNAPSHOT"))
     kapt("io.qalipsis:qalipsis-api-processors")
 
     runtimeOnly("io.qalipsis:qalipsis-runtime")
@@ -49,8 +49,7 @@ dependencies {
 
     implementation("io.qalipsis.plugin:qalipsis-plugin-jms")
     implementation("io.qalipsis.plugin:qalipsis-plugin-jackson")
-    implementation("org.apache.activemq:activemq-all:5.4.2")
-
+    implementation("org.apache.activemq:activemq-all:5.15.14")
     implementation("io.kotest:kotest-assertions-core:5.4.2")
 }
 
