@@ -45,9 +45,13 @@ kapt {
 dependencies {
     implementation(platform("io.qalipsis:qalipsis-platform:0.7.a-SNAPSHOT"))
     kapt(platform("io.qalipsis:qalipsis-platform:0.7.a-SNAPSHOT"))
-    kapt("io.qalipsis:qalipsis-api-processors")
+    kapt("io.qalipsis:qalipsis-api-processors:0.7.3-SNAPSHOT")
 
-    implementation("io.qalipsis.plugin:qalipsis-plugin-netty")
+    implementation("io.qalipsis:qalipsis-head:0.7.3-SNAPSHOT")
+    implementation("io.qalipsis:qalipsis-factory:0.7.3-SNAPSHOT")
+    implementation("io.qalipsis:qalipsis-runtime:0.7.3-SNAPSHOT")
+
+    implementation("io.qalipsis.plugin:qalipsis-plugin-netty:0.7.1-SNAPSHOT")
     implementation("io.qalipsis.plugin:qalipsis-plugin-kafka")
     implementation("io.qalipsis.plugin:qalipsis-plugin-elasticsearch")
     implementation("io.qalipsis.plugin:qalipsis-plugin-r2dbc-jasync")
@@ -75,7 +79,7 @@ task<JavaExec>("runCampaign") {
         "-XX:HeapDumpPath=heap-dump.hprof",
         "-XX:ErrorFile=logs/hs_err_pid%p.log"
     )
-    args("--autostart", "-c", "report.export.console.enabled=true")
+    args("--autostart", "-c", "report.export.console-live.enabled=true")
     workingDir = projectDir
     classpath = sourceSets["main"].runtimeClasspath
 }

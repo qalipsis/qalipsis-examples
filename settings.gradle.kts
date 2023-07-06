@@ -20,7 +20,7 @@ include(
     "simple",
     "cassandra",
     "tcp-echo",
-    //"demo-microservice",
+    "demo-microservice",
     "quickstart1-http",
     "distributed-system",
     "cassandra",

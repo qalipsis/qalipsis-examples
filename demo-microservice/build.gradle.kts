@@ -35,10 +35,6 @@ kapt {
 }
 
 dependencies {
-    implementation(platform("io.qalipsis:qalipsis-platform:0.7.a-SNAPSHOT"))
-    kapt(platform("io.qalipsis:qalipsis-platform:0.7.a-SNAPSHOT"))
-    kapt("io.qalipsis:qalipsis-api-processors")
-
     implementation(kotlin("stdlib"))
 
     kapt(platform("io.micronaut:micronaut-bom:$micronautVersion"))

@@ -1,4 +1,4 @@
-FROM openjdk:11-jdk-slim
+FROM --platform=linux/amd64 openjdk:11-jdk-slim
 LABEL maintainer="Eric Jessé <eric.jesse@aeris-consulting.com>"
 
 ARG JAR_NAME

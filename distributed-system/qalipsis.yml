@@ -1,0 +1,21 @@
+meters:
+  export:
+    elasticsearch:
+      enabled: true
+
+events:
+  export:
+    elasticsearch:
+      enabled: false
+
+http:
+  client:
+    pool:
+      size: 100
+
+
+logging:
+  root: WARN
+  level:
+    io.qalipsis: INFO
+    "io.qalipsis.plugins.elasticsearch.events.ElasticsearchEventsPublisher": OFF

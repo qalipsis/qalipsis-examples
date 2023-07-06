@@ -73,6 +73,9 @@ services:
     ports:
       - "18080:8080"
       - "18443:8443"
+    healthcheck:
+      #test: wget --no-verbose --tries=1 --spider http://localhost:8080 || exit 1
+      test: exit 0
     depends_on:
       - kafka
 

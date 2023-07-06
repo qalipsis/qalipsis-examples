@@ -74,10 +74,10 @@ internal class DemoMicroserviceIntegrationTest : TestPropertyProvider {
             "app.security.password" to "test",
             "messaging.rabbitmq.enabled" to "false",
             "messaging.kafka.enabled" to "false",
-            "redis.uri" to "redis://${redisContainer.containerIpAddress}:${redisContainer.getMappedPort(6379)}",
+            "redis.uri" to "redis://localhost:${redisContainer.getMappedPort(6379)}",
             "datasources.default.url" to pgsql.jdbcUrl,
             "datasources.default.username" to pgsql.username,
-            "datasources.default.password" to pgsql.password,
+            "datasources.default.password" to pgsql.password
         )
     }
 
