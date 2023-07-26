@@ -37,7 +37,6 @@ import io.qalipsis.plugins.redis.lettuce.streams.consumer.LettuceStreamsConsumer
 import io.qalipsis.plugins.redis.lettuce.streams.consumer.streamsConsume
 import io.qalipsis.plugins.redis.lettuce.streams.producer.LettuceStreamsProduceRecord
 import io.qalipsis.plugins.redis.lettuce.streams.producer.streamsProduce
-import java.time.Instant
 
 class RedisProduceAndConsume {
 

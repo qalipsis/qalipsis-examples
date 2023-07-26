@@ -14,5 +14,5 @@ You will find two scenarios:
    README file
 2. Execute the Gradle task `runCampaignForSaveAndPoll` with the command `gradle :redis:runCampaignForSaveAndPoll` to see
    the save and poll scenario in action.
-3. Execute the Gradle task `runCampaignProduceAndConsume` with the command `gradle :redis:runCampaignProduceAndConsume`
+3. Execute the Gradle task `runCampaignForProduceAndConsume` with the command `gradle :redis:runCampaignForProduceAndConsume`
    to see the produce and consume scenario in action.

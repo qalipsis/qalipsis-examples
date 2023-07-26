@@ -18,9 +18,9 @@ package io.qalipsis.examples.utils
 
 object ServerConfiguration{
 
-    val NODES = listOf("localhost:17000")
+    val NODES = listOf("localhost:6379")
     const val DATABASE = 0
     const val USER_NAME = ""
-    const val PASSWORD = "default_password"
+    const val PASSWORD = ""
 
 }

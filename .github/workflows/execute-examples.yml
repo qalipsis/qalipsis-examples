@@ -1,0 +1,83 @@
+name: Java CI - Work in progress
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    timeout-minutes: 25
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ['ubuntu-latest']
+        java: ['11']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up JDK
+        uses: actions/setup-java@v1 # https://github.com/actions/setup-java
+        with:
+          java-version: ${{ matrix.java }}
+
+      - name: Check licenses
+        run: ./gradlew checkLicense
+        if: always()
+
+      - name: Compile
+        run: ./gradlew clean build
+
+      - name: Cassandra Save and poll
+        run: (docker-compose -f cassandra/docker-compose.yml up -d && sleep 10 && ./gradlew :cassandra:runCampaignForSaveAndPoll); docker-compose -f cassandra/docker-compose.yml down -v
+
+      - name: Cassandra Save and search
+        run: (docker-compose -f cassandra/docker-compose.yml up -d && sleep 10 && ./gradlew :cassandra:runCampaignForSaveAndSearch); docker-compose -f cassandra/docker-compose.yml down -v
+
+      - name: Elasticsearch Save and poll
+        run: (docker-compose -f elasticsearch/docker-compose.yml up -d && sleep 10 && ./gradlew :elasticsearch:runCampaignForSaveAndPoll); docker-compose -f elasticsearch/docker-compose.yml down -v
+
+      - name: Elasticsearch Save and search
+        run: (docker-compose -f elasticsearch/docker-compose.yml up -d && sleep 10 && ./gradlew :elasticsearch:runCampaignForSaveAndSearch); docker-compose -f elasticsearch/docker-compose.yml down -v
+
+      - name: Influxdb Save and poll
+        run: (docker-compose -f influxdb/docker-compose.yml up -d && sleep 10 && ./gradlew :influxdb:runCampaignForSaveAndPoll); docker-compose -f influxdb/docker-compose.yml down -v
+
+      - name: Influxdb Save and search
+        run: (docker-compose -f influxdb/docker-compose.yml up -d && sleep 10 && ./gradlew :influxdb:runCampaignForSaveAndSearch); docker-compose -f influxdb/docker-compose.yml down -v
+
+      - name: Kafka Produce and consume
+        run: (docker-compose -f kafka/docker-compose.yml up -d && sleep 10 && ./gradlew :kafka:runCampaignForProduceAndConsume); docker-compose -f kafka/docker-compose.yml down -v
+
+      - name: MQTT Produce and consume
+        run: (docker-compose -f mqtt/docker-compose.yml up -d && sleep 10 && ./gradlew :mqtt:runCampaignForProduceAndConsume); docker-compose -f mqtt/docker-compose.yml down -v
+
+      - name: RabbitMQ Produce and consume
+        run: (docker-compose -f rabbitmq/docker-compose.yml up -d && sleep 10 && ./gradlew :rabbitmq:runCampaignForProduceAndConsume); docker-compose -f rabbitmq/docker-compose.yml down -v
+
+      - name: Redis Produce and consume
+        run: (docker-compose -f redis/docker-compose.yml up -d && sleep 10 && ./gradlew :redis:runCampaignForProduceAndConsume); docker-compose -f redis/docker-compose.yml down -v
+
+      - name: Redis Save and poll
+        run: (docker-compose -f redis/docker-compose.yml up -d && sleep 10 && ./gradlew :redis:runCampaignForSaveAndPoll); docker-compose -f redis/docker-compose.yml down -v
+
+      - name: R2JDC-Jasync Save and poll
+        run: (docker-compose -f r2dbc-jasync/docker-compose.yml up -d && sleep 10 && ./gradlew :r2dbc-jasync:runCampaignForSaveAndPoll); docker-compose -f r2dbc-jasync/docker-compose.yml down -v
+
+      - name: R2JDC-Jasync Save and search
+        run: (docker-compose -f r2dbc-jasync/docker-compose.yml up -d && sleep 10 && ./gradlew :r2dbc-jasync:runCampaignForSaveAndSearch); docker-compose -f r2dbc-jasync/docker-compose.yml down -v
+
+#      - name: MongoDB Save and poll
+#        run: (docker-compose -f mongodb/docker-compose.yml up -d && sleep 10 && ./gradlew :mongodb:runCampaignForSaveAndPoll); docker-compose -f mongodb/docker-compose.yml down -v
+#
+#      - name: MongoDB Save and search
+#        run: (docker-compose -f mongodb/docker-compose.yml up -d && sleep 10 && ./gradlew :mongodb:runCampaignForSaveAndSearch); docker-compose -f mongodb/docker-compose.yml down -v
+#
+#      - name: Jms Produce and consume
+#        run: (docker-compose -f jms/docker-compose.yml up -d && sleep 10 && ./gradlew :jms:runCampaignForProduceAndConsume); docker-compose -f jms/docker-compose.yml down -v

@@ -1,10 +1,17 @@
 version: '3.9'
 
 services:
-
   mongo:
     image: mongo
     restart: always
     container_name: mongodb-server
     ports:
       - "27018:27017"
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+  start-completion:
+    container_name: start-completion
+    image: busybox
+    depends_on:
+      mongo:
+        condition: service_healthy

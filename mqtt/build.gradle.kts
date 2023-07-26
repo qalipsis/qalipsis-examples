@@ -52,7 +52,7 @@ dependencies {
     implementation("io.kotest:kotest-assertions-core:5.4.2")
 }
 
-task<JavaExec>("runCampaignProduceAndConsume") {
+task<JavaExec>("runCampaignForProduceAndConsume") {
     group = "application"
     description = "Start a campaign for the produce and consume scenario"
     mainClass.set("io.qalipsis.runtime.Qalipsis")

@@ -1,22 +1,25 @@
 logging:
   console: true
   root: info
-  level:
-    events: info
-    io.qalipsis.sample: info
-    io.qalipsis.plugins.elasticsearch.events: info
-    io.qalipsis.core.heads.campaigns.CampaignAutoStarter: trace
+#  level:
+#    events: info
+#    io.qalipsis.sample: info
+#    io.qalipsis.plugins.elasticsearch.events: info
+#    io.qalipsis.core.heads.campaigns.CampaignAutoStarter: trace
 
 campaign:
   minions-count-per-scenario: 0
   minions-factor: 1
   speed-factor: 1
-  start-offset-ms: 500
+#  start-offset-ms: 500
   name: campaign-${random.shortuuid}
+  configuration:
+    validation:
+      max-execution-duration: PT2M
 
 events:
   root: trace
   export:
-    slf4j:
-      enabled: true
-      min-level: trace
+#    slf4j:
+#      enabled: true
+#      min-level: trace

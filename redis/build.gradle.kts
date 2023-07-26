@@ -62,7 +62,7 @@ task<JavaExec>("runCampaignForSaveAndPoll") {
     classpath = sourceSets["main"].runtimeClasspath
 }
 
-task<JavaExec>("runCampaignProduceAndConsume") {
+task<JavaExec>("runCampaignForProduceAndConsume") {
     group = "application"
     description = "Start a campaign for the redis-produce-and-consume scenario"
     mainClass.set("io.qalipsis.runtime.Qalipsis")
