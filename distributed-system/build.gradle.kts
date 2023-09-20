@@ -43,8 +43,8 @@ kapt {
 }
 
 dependencies {
-    implementation(platform("io.qalipsis:qalipsis-platform:0.7.a-SNAPSHOT"))
-    kapt(platform("io.qalipsis:qalipsis-platform:0.7.a-SNAPSHOT"))
+    implementation(platform("io.qalipsis:qalipsis-platform:0.7.b-SNAPSHOT"))
+    kapt(platform("io.qalipsis:qalipsis-platform:0.7.b-SNAPSHOT"))
     kapt("io.qalipsis:qalipsis-api-processors")
 
     implementation("io.qalipsis.plugin:qalipsis-plugin-netty")

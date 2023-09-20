@@ -4,6 +4,7 @@
 # Log files
 *.log
 *.log.*.gz
+*.log.json
 
 
 # Temporary files

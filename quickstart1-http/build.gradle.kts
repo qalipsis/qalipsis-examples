@@ -37,8 +37,8 @@ tasks.withType<KotlinCompile>().configureEach {
 val assertkVersion: String by project
 
 dependencies {
-    implementation(enforcedPlatform("io.qalipsis:qalipsis-platform:0.7.a-SNAPSHOT"))
-    kapt(enforcedPlatform("io.qalipsis:qalipsis-platform:0.7.a-SNAPSHOT"))
+    implementation(enforcedPlatform("io.qalipsis:qalipsis-platform:0.7.b-SNAPSHOT"))
+    kapt(enforcedPlatform("io.qalipsis:qalipsis-platform:0.7.b-SNAPSHOT"))
     kapt("io.qalipsis:qalipsis-api-processors")
 
     runtimeOnly("io.qalipsis:qalipsis-runtime")
