@@ -61,6 +61,12 @@ jobs:
       - name: Kafka Produce and consume
         run: (docker-compose -f kafka/docker-compose.yml up -d && sleep 10 && ./gradlew :kafka:runCampaignForProduceAndConsume); docker-compose -f kafka/docker-compose.yml down -v
 
+      - name: MongoDB Save and poll
+        run: (docker-compose -f mongodb/docker-compose.yml up -d && sleep 10 && ./gradlew :mongodb:runCampaignForSaveAndPoll); docker-compose -f mongodb/docker-compose.yml down -v
+
+      - name: MongoDB Save and search
+        run: (docker-compose -f mongodb/docker-compose.yml up -d && sleep 10 && ./gradlew :mongodb:runCampaignForSaveAndSearch); docker-compose -f mongodb/docker-compose.yml down -v
+
       - name: MQTT Produce and consume
         run: (docker-compose -f mqtt/docker-compose.yml up -d && sleep 10 && ./gradlew :mqtt:runCampaignForProduceAndConsume); docker-compose -f mqtt/docker-compose.yml down -v
 
@@ -78,12 +84,6 @@ jobs:
 
       - name: R2JDC-Jasync Save and search
         run: (docker-compose -f r2dbc-jasync/docker-compose.yml up -d && sleep 10 && ./gradlew :r2dbc-jasync:runCampaignForSaveAndSearch); docker-compose -f r2dbc-jasync/docker-compose.yml down -v
-
-#      - name: MongoDB Save and poll
-#        run: (docker-compose -f mongodb/docker-compose.yml up -d && sleep 10 && ./gradlew :mongodb:runCampaignForSaveAndPoll); docker-compose -f mongodb/docker-compose.yml down -v
-#
-#      - name: MongoDB Save and search
-#        run: (docker-compose -f mongodb/docker-compose.yml up -d && sleep 10 && ./gradlew :mongodb:runCampaignForSaveAndSearch); docker-compose -f mongodb/docker-compose.yml down -v
 #
 #      - name: Jms Produce and consume
 #        run: (docker-compose -f jms/docker-compose.yml up -d && sleep 10 && ./gradlew :jms:runCampaignForProduceAndConsume); docker-compose -f jms/docker-compose.yml down -v
