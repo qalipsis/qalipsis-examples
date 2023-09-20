@@ -14,24 +14,12 @@
  * permissions and limitations under the License.
  */
 
-rootProject.name = "qalipsis-examples"
+package io.qalipsis.examples.utils
 
-include(
-    "simple",
-    "cassandra",
-    "tcp-echo",
-    //"demo-microservice",
-    "quickstart1-http",
-    "distributed-system",
-    "cassandra",
-    "elasticsearch",
-    "r2dbc-jasync",
-    "mongodb",
-    "influxdb",
-    "kafka",
-    "redis",
-    "rabbitmq",
-    "jms",
-    "mqtt",
-    "jakarta-ee-messaging"
-)
+object ServerConfiguration {
+    const val SERVER_URL = "tcp://localhost:61616"
+    const val QUEUE_NAME = "battery_state"
+    const val TOPIC_NAME = "battery_state"
+    const val CONTAINER_USERNAME = "qalipsis_user"
+    const val CONTAINER_PASSWORD = "qalipsis_password"
+}

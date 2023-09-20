@@ -1,0 +1,9 @@
+campaign:
+  name: jakarta-ee-messaging-${random.shortuuid}
+
+logging:
+  console: true
+  root: INFO
+
+events:
+  root: WARN

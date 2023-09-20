@@ -1,0 +1,14 @@
+version: '3.9'
+
+services:
+
+  jakarta:
+    image: vromero/activemq-artemis
+    restart: always
+    container_name: ActiveMQ-Artemis-server
+    ports:
+      - "61616:61616"
+      - "18161:8161"
+    environment:
+      ARTEMIS_USERNAME: "qalipsis_user"
+      ARTEMIS_PASSWORD: "qalipsis_password"

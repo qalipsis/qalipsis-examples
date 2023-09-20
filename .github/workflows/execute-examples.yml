@@ -52,6 +52,12 @@ jobs:
       - name: Influxdb Save and search
         run: (docker-compose -f influxdb/docker-compose.yml up -d && sleep 10 && ./gradlew :influxdb:runCampaignForSaveAndSearch); docker-compose -f influxdb/docker-compose.yml down -v
 
+      - name: Jakarta Produce and consume from queue
+        run: (docker-compose -f jakarta-ee-messaging/docker-compose.yml up -d && sleep 10 && ./gradlew :jakarta-ee-messaging:runCampaignForProduceAndConsumeFromQueue); docker-compose -f jakarta-ee-messaging/docker-compose.yml down -v
+
+      - name: Jakarta Produce and consume from topic
+        run: (docker-compose -f jakarta-ee-messaging/docker-compose.yml up -d && sleep 10 && ./gradlew :jakarta-ee-messaging:runCampaignForProduceAndConsumeFromTopic); docker-compose -f jakarta-ee-messaging/docker-compose.yml down -v
+
       - name: Kafka Produce and consume
         run: (docker-compose -f kafka/docker-compose.yml up -d && sleep 10 && ./gradlew :kafka:runCampaignForProduceAndConsume); docker-compose -f kafka/docker-compose.yml down -v
 

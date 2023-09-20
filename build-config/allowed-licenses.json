@@ -240,6 +240,10 @@
     {
       "moduleLicense": ".*",
       "moduleName": "org.jfree:jfreechart"
+    },
+    {
+      "moduleLicense": ".*",
+      "moduleName": "net.jcip:jcip-annotations"
     }
   ]
 }
