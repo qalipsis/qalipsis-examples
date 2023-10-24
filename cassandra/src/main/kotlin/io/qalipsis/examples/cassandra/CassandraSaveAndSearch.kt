@@ -23,13 +23,6 @@ import io.qalipsis.api.executionprofile.regular
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.verify
-import io.qalipsis.examples.utils.BatteryState
-import io.qalipsis.examples.utils.BatteryStateContract
-import io.qalipsis.examples.utils.DatabaseConfiguration.DATACENTER_NAME
-import io.qalipsis.examples.utils.DatabaseConfiguration.KEYSPACE
-import io.qalipsis.examples.utils.DatabaseConfiguration.SERVERS
-import io.qalipsis.examples.utils.DatabaseConfiguration.TABLE_NAME
-import io.qalipsis.examples.utils.ScenarioConfiguration.NUMBER_MINION
 import io.qalipsis.plugins.cassandra.cassandra
 import io.qalipsis.plugins.cassandra.save.CassandraSaveRow
 import io.qalipsis.plugins.cassandra.save.save
@@ -42,23 +35,23 @@ class CassandraSaveAndSearch {
 
     @Scenario("cassandra-save-and-search")
     fun scenarioSaveAndSearch() {
-        //we define the scenario, set the name, number of minions and rampUp
+        // we define the scenario, set the name, number of minions and rampUp
         scenario {
-            minionsCount = NUMBER_MINION
+            minionsCount = 20
             profile {
                 regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
             }
         }
             .start()
-            .jackson() //we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
-            .csvToObject(BatteryState::class) {
+            .jackson() // we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
+            .csvToObject(mappingClass = BatteryState::class) {
 
-                classpath("battery-levels.csv")
+                classpath(path = "battery-levels.csv")
                 // we define the header of the csv file
                 header {
-                    column("deviceId")
-                    column("timestamp")
-                    column("batteryLevel").integer()
+                    column(name = "deviceId")
+                    column(name = "timestamp")
+                    column(name = "batteryLevel").integer()
                 }
                 unicast()
             }
@@ -67,29 +60,29 @@ class CassandraSaveAndSearch {
             .save {
                 name = "save"
 
-                //setup connection of the database
+                // setup connection of the database
                 connect {
-                    servers = SERVERS
-                    keyspace = KEYSPACE
-                    datacenterName = DATACENTER_NAME
+                    servers = listOf("localhost:9042")
+                    keyspace = "iot"
+                    datacenterName = "datacenter1"
                 }
 
-                //define the name of the database
+                // define the name of the database
                 table { _, _ ->
-                    TABLE_NAME
+                    "batteryState"
                 }
 
-                //define the name of columns of the table name
+                // define the name of columns of the table name
                 columns { _, _ ->
                     listOf(
-                        BatteryStateContract.COMPANY,
-                        BatteryStateContract.DEVICE_ID,
-                        BatteryStateContract.TIMESTAMP,
-                        BatteryStateContract.BATTERY_LEVEL
+                        "company",
+                        "deviceid",
+                        "timestamp",
+                        "batterylevel"
                     )
                 }
 
-                //create the list of rows to save in database
+                // create the list of rows to save in database
                 rows { _, input ->
                     listOf(
                         CassandraSaveRow(
@@ -105,12 +98,12 @@ class CassandraSaveAndSearch {
                 name = "search"
 
                 connect {
-                    servers = SERVERS
-                    keyspace = KEYSPACE
-                    datacenterName = DATACENTER_NAME
+                    servers = listOf("localhost:9042")
+                    keyspace = "iot"
+                    datacenterName = "datacenter1"
                 }
                 query { _, _ ->
-                    "SELECT * FROM $TABLE_NAME WHERE ${BatteryStateContract.COMPANY} = ? AND ${BatteryStateContract.DEVICE_ID} = ? AND ${BatteryStateContract.TIMESTAMP} = ?"
+                    "SELECT * FROM batteryState WHERE company = ? AND deviceid = ? AND timestamp = ?"
                 }
                 parameters { _, input ->
                     listOf("ACME Inc.", input.input.deviceId, input.input.timestamp)
@@ -119,9 +112,9 @@ class CassandraSaveAndSearch {
             .map {
                 it.input.input to it.records.first().let { cassandraRecord ->
                     BatteryState(
-                        deviceId = cassandraRecord.value[CqlIdentifier.fromCql(BatteryStateContract.DEVICE_ID)] as String,
-                        timestamp = cassandraRecord.value[CqlIdentifier.fromCql(BatteryStateContract.TIMESTAMP)] as Instant,
-                        batteryLevel = (cassandraRecord.value[CqlIdentifier.fromCql(BatteryStateContract.BATTERY_LEVEL)] as Number).toInt()
+                        deviceId = cassandraRecord.value[CqlIdentifier.fromCql("deviceid")] as String,
+                        timestamp = cassandraRecord.value[CqlIdentifier.fromCql("timestamp")] as Instant,
+                        batteryLevel = (cassandraRecord.value[CqlIdentifier.fromCql("batterylevel")] as Number).toInt()
                     )
                 }
             }

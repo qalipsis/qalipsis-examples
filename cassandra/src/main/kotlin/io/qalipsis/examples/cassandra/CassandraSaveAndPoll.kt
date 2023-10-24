@@ -26,13 +26,6 @@ import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.innerJoin
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.verify
-import io.qalipsis.examples.utils.BatteryState
-import io.qalipsis.examples.utils.BatteryStateContract
-import io.qalipsis.examples.utils.DatabaseConfiguration.DATACENTER_NAME
-import io.qalipsis.examples.utils.DatabaseConfiguration.KEYSPACE
-import io.qalipsis.examples.utils.ScenarioConfiguration.NUMBER_MINION
-import io.qalipsis.examples.utils.DatabaseConfiguration.SERVERS
-import io.qalipsis.examples.utils.DatabaseConfiguration.TABLE_NAME
 import io.qalipsis.plugins.cassandra.cassandra
 import io.qalipsis.plugins.cassandra.poll.poll
 import io.qalipsis.plugins.cassandra.save.CassandraSaveRow
@@ -48,53 +41,53 @@ class CassandraSaveAndPoll {
     @Scenario("cassandra-save-and-poll")
     fun scenarioSaveAndPoll() {
 
-        //we define the scenario, set the name, number of minions and rampUp
+        // we define the scenario, set the name, number of minions and rampUp
         scenario {
-            minionsCount = NUMBER_MINION
+            minionsCount = 20
             profile {
                 regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
             }
         }
             .start()
-            .jackson() //we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
-            .csvToObject(BatteryState::class) {
+            .jackson() // we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
+            .csvToObject(mappingClass = BatteryState::class) {
 
-                classpath("battery-levels.csv")
+                classpath(path = "battery-levels.csv")
                 // we define the header of the csv file
                 header {
-                    column("deviceId")
-                    column("timestamp")
-                    column("batteryLevel").integer()
+                    column(name = "deviceId")
+                    column(name = "timestamp")
+                    column(name = "batteryLevel").integer()
                 }
                 unicast()
             }
             .map { it.value } // we transform the output of the CSV reader entries to utils.BatteryState
-            .cassandra()// we start the cassandra step to save data in cassandra database
+            .cassandra() // we start the cassandra step to save data in cassandra database
             .save {
 
-                //setup connection of the database
+                // setup connection of the database
                 connect {
-                    servers = SERVERS
-                    keyspace = KEYSPACE
-                    datacenterName = DATACENTER_NAME
+                    servers = listOf("localhost:9042")
+                    keyspace = "iot"
+                    datacenterName = "datacenter1"
                 }
 
-                //define the name of the database
+                // define the name of the database
                 table { _, _ ->
-                    TABLE_NAME
+                    "batteryState"
                 }
 
-                //define the name of columns of the table name
+                // define the name of columns of the table name
                 columns { _, _ ->
                     listOf(
-                        BatteryStateContract.COMPANY,
-                        BatteryStateContract.DEVICE_ID,
-                        BatteryStateContract.TIMESTAMP,
-                        BatteryStateContract.BATTERY_LEVEL
+                        "company",
+                        "deviceid",
+                        "timestamp",
+                        "batterylevel"
                     )
                 }
 
-                //create the list of rows to save in database
+                // create the list of rows to save in database
                 rows { _, input ->
                     listOf(
                         CassandraSaveRow(
@@ -108,36 +101,36 @@ class CassandraSaveAndPoll {
             }
             .map { it.input }
             .innerJoin(
-                using = { correlationRecord -> correlationRecord.value.primaryKey },
+                using = { correlationRecord -> correlationRecord.value.deviceId },
                 on = {
                     it.cassandra().poll {
                         connect {
-                            servers = SERVERS
-                            keyspace = KEYSPACE
-                            datacenterName = DATACENTER_NAME
+                            servers = listOf("localhost:9042")
+                            keyspace = "iot"
+                            datacenterName = "datacenter1"
                         }
-                        query("SELECT ${BatteryStateContract.DEVICE_ID}, ${BatteryStateContract.TIMESTAMP}, ${BatteryStateContract.BATTERY_LEVEL} FROM $TABLE_NAME WHERE ${BatteryStateContract.COMPANY} = ? ORDER BY ${BatteryStateContract.TIMESTAMP}")
+                        query(queryString = "SELECT deviceid, timestamp, batterylevel FROM batteryState WHERE company = ? ORDER BY timestamp")
                         parameters("ACME Inc.")
                         tieBreaker {
-                            name = BatteryStateContract.TIMESTAMP
+                            name = "timestamp"
                             type = GenericType.INSTANT
                         }
-                        pollDelay(Duration.ofSeconds(1))
+                        pollDelay(duration = Duration.ofSeconds(1))
                     }
                         .flatten()
                         .map { record ->
                             BatteryState(
-                                deviceId = record.value[CqlIdentifier.fromCql(BatteryStateContract.DEVICE_ID)] as String,
-                                timestamp = record.value[CqlIdentifier.fromCql(BatteryStateContract.TIMESTAMP)] as Instant,
-                                batteryLevel = (record.value[CqlIdentifier.fromCql(BatteryStateContract.BATTERY_LEVEL)] as Number).toInt()
+                                deviceId = record.value[CqlIdentifier.fromCql("deviceid")] as String,
+                                timestamp = record.value[CqlIdentifier.fromCql("timestamp")] as Instant,
+                                batteryLevel = (record.value[CqlIdentifier.fromCql("batterylevel")] as Number).toInt()
                             )
                         }
                 },
                 having = { correlationRecord ->
-                    correlationRecord.value.primaryKey
+                    correlationRecord.value.deviceId
                 }
             ).configure {
-                timeout(5000L)
+                timeout(duration = 5000L)
                 report {
                     reportErrors = true
                 }

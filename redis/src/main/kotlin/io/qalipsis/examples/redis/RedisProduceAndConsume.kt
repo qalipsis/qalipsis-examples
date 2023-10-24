@@ -16,19 +16,16 @@
 
 package io.qalipsis.examples.redis
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.ints.shouldBeExactly
 import io.qalipsis.api.annotations.Scenario
 import io.qalipsis.api.executionprofile.regular
 import io.qalipsis.api.scenario.scenario
-import io.qalipsis.api.steps.*
-import io.qalipsis.examples.utils.BatteryState
-import io.qalipsis.examples.utils.BatteryStateContract
-import io.qalipsis.examples.utils.ScenarioConfiguration
-import io.qalipsis.examples.utils.ServerConfiguration
+import io.qalipsis.api.steps.filterNotNull
+import io.qalipsis.api.steps.innerJoin
+import io.qalipsis.api.steps.map
+import io.qalipsis.api.steps.verify
 import io.qalipsis.plugins.jackson.csv.csvToObject
 import io.qalipsis.plugins.jackson.jackson
 import io.qalipsis.plugins.redis.lettuce.configuration.RedisConnectionType
@@ -37,32 +34,29 @@ import io.qalipsis.plugins.redis.lettuce.streams.consumer.LettuceStreamsConsumer
 import io.qalipsis.plugins.redis.lettuce.streams.consumer.streamsConsume
 import io.qalipsis.plugins.redis.lettuce.streams.producer.LettuceStreamsProduceRecord
 import io.qalipsis.plugins.redis.lettuce.streams.producer.streamsProduce
+import java.time.Instant
 
 class RedisProduceAndConsume {
-
-    private val objectMapper = ObjectMapper().also {
-        it.registerModule(JavaTimeModule())
-    }
 
     @Scenario("redis-produce-and-consume")
     fun redisProduceAndConsume() {
 
         scenario {
-            minionsCount = ScenarioConfiguration.NUMBER_MINION
+            minionsCount = 20
             profile {
                 regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
             }
         }
             .start()
-            .jackson() //we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
-            .csvToObject(BatteryState::class) {
+            .jackson() // we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
+            .csvToObject(mappingClass = BatteryState::class) {
 
-                classpath("battery-levels.csv")
+                classpath(path = "battery-levels.csv")
                 // we define the header of the csv file
                 header {
-                    column("device_id")
-                    column("timestamp")
-                    column("battery_level").integer()
+                    column(name = "device_id")
+                    column(name = "timestamp")
+                    column(name = "battery_level").integer()
                 }
                 unicast()
             }
@@ -70,20 +64,20 @@ class RedisProduceAndConsume {
             .redisLettuce()
             .streamsProduce {
                 connection {
-                    nodes = ServerConfiguration.NODES
-                    database = ServerConfiguration.DATABASE
+                    nodes = listOf("localhost:6379")
+                    database = 0
                     redisConnectionType = RedisConnectionType.SINGLE
-                    authPassword = ServerConfiguration.PASSWORD
-                    authUser = ServerConfiguration.USER_NAME
+                    authPassword = ""
+                    authUser = ""
                 }
 
                 records { _, input ->
                     listOf(
                         LettuceStreamsProduceRecord(
-                            key = BatteryStateContract.KEY_FOR_PRODUCE_AND_CONSUME, value = mapOf(
-                                BatteryStateContract.DEVICE_ID to input.deviceId,
-                                BatteryStateContract.TIMESTAMP to input.timestamp.epochSecond.toString(),
-                                BatteryStateContract.BATTERY_LEVEL to input.batteryLevel.toString()
+                            key = "battery_state_produce_and_consume", value = mapOf(
+                                "device_id" to input.deviceId,
+                                "timestamp" to input.timestamp.epochSecond.toString(),
+                                "battery_level" to input.batteryLevel.toString()
                             )
                         )
                     )
@@ -94,32 +88,37 @@ class RedisProduceAndConsume {
             }
             .innerJoin(
                 using = { correlationRecord ->
-                    correlationRecord.value.primaryKey()
+                    correlationRecord.value.deviceId
                 },
 
                 on = {
                     it.redisLettuce()
                         .streamsConsume {
                             connection {
-                                nodes = ServerConfiguration.NODES
-                                database = ServerConfiguration.DATABASE
+                                nodes = listOf("localhost:6379")
+                                database = 0
                                 redisConnectionType = RedisConnectionType.SINGLE
-                                authPassword = ServerConfiguration.PASSWORD
-                                authUser = ServerConfiguration.USER_NAME
+                                authPassword = ""
+                                authUser = ""
                             }
 
-                            streamKey(BatteryStateContract.KEY_FOR_PRODUCE_AND_CONSUME)
+                            streamKey(key = "battery_state_produce_and_consume")
                             offset(LettuceStreamsConsumerOffset.FROM_BEGINNING)
                             group("consumer")
                         }
                         .flatten()
                         .map { result ->
-                            objectMapper.convertValue(result.value,BatteryState::class.java)
+                            val batteryState = result.value
+                            BatteryState(
+                                deviceId = batteryState.getValue("device_id"),
+                                batteryLevel = batteryState.getValue("battery_level").toInt(),
+                                timestamp = Instant.ofEpochSecond(batteryState.getValue("timestamp").toLong())
+                            )
                         }
                 },
 
                 having = { correlationRecord ->
-                    correlationRecord.value.primaryKey()
+                    correlationRecord.value.deviceId
                 }
             )
             .filterNotNull()

@@ -12,9 +12,6 @@ import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.innerJoin
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.verify
-import io.qalipsis.examples.utils.BatteryState
-import io.qalipsis.examples.utils.ScenarioConfiguration
-import io.qalipsis.examples.utils.ServerConfiguration
 import io.qalipsis.plugins.jackson.csv.csvToObject
 import io.qalipsis.plugins.jackson.jackson
 import io.qalipsis.plugins.jakarta.consumer.consume
@@ -38,23 +35,23 @@ class JakartaProduceAndConsumeFromQueue {
     @Scenario("jakarta-produce-and-consume-from-queue")
     fun scenarioProduceAndConsumeFromQueue() {
 
-        //we define the scenario, set the name, number of minions and rampUp
+        // we define the scenario, set the name, number of minions and rampUp
         scenario {
-            minionsCount = ScenarioConfiguration.NUMBER_MINION
+            minionsCount = 20
             profile {
                 regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
             }
         }
             .start()
-            .jackson() //we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
-            .csvToObject(BatteryState::class) {
+            .jackson() // we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
+            .csvToObject(mappingClass = BatteryState::class) {
 
-                classpath("battery-levels.csv")
+                classpath(path = "battery-levels.csv")
                 // we define the header of the csv file
                 header {
-                    column("deviceId")
-                    column("timestamp")
-                    column("batteryLevel").integer()
+                    column(name = "deviceId")
+                    column(name = "timestamp")
+                    column(name = "batteryLevel").integer()
                 }
                 unicast()
             }
@@ -64,9 +61,9 @@ class JakartaProduceAndConsumeFromQueue {
 
                 connect {
                     ActiveMQConnectionFactory(
-                        ServerConfiguration.SERVER_URL,
-                        ServerConfiguration.CONTAINER_USERNAME,
-                        ServerConfiguration.CONTAINER_PASSWORD
+                        "tcp://localhost:61616",
+                        "qalipsis_user",
+                        "qalipsis_password"
                     ).createQueueConnection()
                 }
 
@@ -77,7 +74,7 @@ class JakartaProduceAndConsumeFromQueue {
                 records { _, input ->
                     listOf(
                         JakartaProducerRecord(
-                            destination = Queue(ServerConfiguration.QUEUE_NAME),
+                            destination = Queue("battery_state"),
                             messageType = JakartaMessageType.BYTES,
                             value = objectMapper.writeValueAsBytes(input)
                         )
@@ -89,17 +86,17 @@ class JakartaProduceAndConsumeFromQueue {
             }
             .innerJoin(
                 using = { correlationRecord ->
-                    correlationRecord.value.primaryKey()
+                    correlationRecord.value.deviceId
                 },
 
                 on = {
                     it.jakarta().consume {
-                        queues(ServerConfiguration.QUEUE_NAME)
+                        queues("battery_state")
                         queueConnection {
                             ActiveMQConnectionFactory(
-                                ServerConfiguration.SERVER_URL,
-                                ServerConfiguration.CONTAINER_USERNAME,
-                                ServerConfiguration.CONTAINER_PASSWORD
+                                "tcp://localhost:61616",
+                                "qalipsis_user",
+                                "qalipsis_password"
                             ).createQueueConnection()
                         }
                     }
@@ -110,7 +107,7 @@ class JakartaProduceAndConsumeFromQueue {
                 },
 
                 having = { correlationRecord ->
-                    correlationRecord.value.primaryKey()
+                    correlationRecord.value.deviceId
                 }
             )
             .filterNotNull()

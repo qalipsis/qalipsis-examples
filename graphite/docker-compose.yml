@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  graphite:
+    image: graphiteapp/graphite-statsd
+    container_name: graphite
+    restart: always
+    volumes:
+      - ./docker-config/conf/storage-schemas.conf:/opt/graphite/conf/storage-schemas.conf:ro
+    ports:
+      - "8080:80"
+      - "2003:2003"
+      - "2004:2004"

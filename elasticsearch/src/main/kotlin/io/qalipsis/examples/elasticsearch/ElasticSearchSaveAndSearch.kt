@@ -28,9 +28,6 @@ import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.delay
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.verify
-import io.qalipsis.examples.utils.BatteryState
-import io.qalipsis.examples.utils.BatteryStateContract
-import io.qalipsis.examples.utils.ScenarioConfiguration.NUMBER_MINION
 import io.qalipsis.plugins.elasticsearch.Document
 import io.qalipsis.plugins.elasticsearch.elasticsearch
 import io.qalipsis.plugins.elasticsearch.save.save
@@ -50,21 +47,21 @@ class ElasticSearchSaveAndSearch {
     @Scenario("elasticsearch-save-and-search")
     fun scenarioSaveAndSearch() {
         scenario {
-            minionsCount = NUMBER_MINION
+            minionsCount = 10
             profile {
                 regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
             }
         }
             .start()
-            .jackson() //we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
-            .csvToObject(BatteryState::class) {
+            .jackson() // we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
+            .csvToObject(mappingClass = BatteryState::class) {
 
-                classpath("battery-levels.csv")
+                classpath(path = "battery-levels.csv")
                 // we define the header of the csv file
                 header {
-                    column("deviceId")
-                    column("timestamp")
-                    column("batteryLevel").integer()
+                    column(name = "deviceId")
+                    column(name = "timestamp")
+                    column(name = "batteryLevel").integer()
                 }
                 unicast()
             }
@@ -80,7 +77,7 @@ class ElasticSearchSaveAndSearch {
                     listOf(
                         Document(
                             index = "battery-state",
-                            id = input.primaryKey,
+                            id = input.deviceId,
                             source = objectMapper.writeValueAsString(input) // we parse to json the object we want to save
                         )
                     )
@@ -93,7 +90,7 @@ class ElasticSearchSaveAndSearch {
                 client {
                     RestClient.builder(HttpHost.create("http://localhost:9200")).build()
                 }
-                index { _, _ -> listOf(BatteryStateContract.INDEX) } // we specify the table where we want to fetch data
+                index { _, _ -> listOf("battery-state") } // we specify the table where we want to fetch data
                 query { _, input ->
                     """{
                         "query": {
@@ -107,7 +104,7 @@ class ElasticSearchSaveAndSearch {
                    }"""
                 } // we create the query that will help us get battery state of a specific id and specific timestamp
             }
-            .deserialize(BatteryState::class) // use this method to transform your elastic search result to a specific object of your class
+            .deserialize(targetClass = BatteryState::class) // use this method to transform your elastic search result to a specific object of your class
             .verify { result ->
                 val savedBatteryState = result.first.input
                 result.second.asClue {

@@ -3,7 +3,7 @@ version: '3.9'
 services:
 
   jms:
-    image: rmohr/activemq:latest
+    image: rmohr/activemq:5.15.9
     restart: always
     container_name: jms-server
     ports:

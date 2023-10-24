@@ -16,8 +16,6 @@
 
 package io.qalipsis.examples.r2dbcjasync
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.ints.shouldBeExactly
@@ -28,10 +26,6 @@ import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.innerJoin
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.verify
-import io.qalipsis.examples.utils.BatteryState
-import io.qalipsis.examples.utils.BatteryStateContract
-import io.qalipsis.examples.utils.DatabaseConfiguration.PostgresDatabaseConfiguration
-import io.qalipsis.examples.utils.ScenarioConfiguration
 import io.qalipsis.plugins.jackson.csv.csvToObject
 import io.qalipsis.plugins.jackson.jackson
 import io.qalipsis.plugins.r2dbc.jasync.dialect.Protocol
@@ -40,37 +34,29 @@ import io.qalipsis.plugins.r2dbc.jasync.r2dbcJasync
 import io.qalipsis.plugins.r2dbc.jasync.save.JasyncSaveRecord
 import io.qalipsis.plugins.r2dbc.jasync.save.save
 import java.time.Duration
+import java.time.Instant
 
 class R2dbcJasyncSaveAndPoll {
-
-    /**
-     * help to parse from [BatteryStateDesiarialise] to json and from json to [BatteryStateDesiarialise]
-     */
-    private val objectMapper = ObjectMapper().also {
-        it.registerModule(JavaTimeModule())
-    }
-
-    private val databaseConfiguration = PostgresDatabaseConfiguration()
 
     @Scenario("r2dbc-jasync-save-and-poll")
     fun r2dbcJasyncSaveAndPoll() {
 
         scenario {
-            minionsCount = ScenarioConfiguration.NUMBER_MINION
+            minionsCount = 20
             profile {
                 regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
             }
         }
             .start()
-            .jackson() //we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
-            .csvToObject(BatteryState::class) {
+            .jackson() // we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
+            .csvToObject(mappingClass = BatteryState::class) {
 
-                classpath("battery-levels.csv")
+                classpath(path = "battery-levels.csv")
                 // we define the header of the csv file
                 header {
-                    column("device_id")
-                    column("timestamp")
-                    column("battery_level").integer()
+                    column(name = "device_id")
+                    column(name = "timestamp")
+                    column(name = "battery_level").integer()
                 }
                 unicast()
             }
@@ -81,29 +67,29 @@ class R2dbcJasyncSaveAndPoll {
                 protocol(Protocol.POSTGRESQL)
 
                 connection {
-                    database = databaseConfiguration.databaseName
-                    port = databaseConfiguration.port
-                    username = databaseConfiguration.userName
-                    password = databaseConfiguration.password
+                    database = "postgres"
+                    port = 15432
+                    username = "postgres"
+                    password = "root"
                 }
 
                 tableName { _, _ ->
-                    databaseConfiguration.tableName
+                    "battery_state"
                 }
 
                 columns { _, _ ->
                     listOf(
-                        BatteryStateContract.ID,
-                        BatteryStateContract.DEVICE_ID,
-                        BatteryStateContract.TIMESTAMP,
-                        BatteryStateContract.BATTERY_LEVEL
+                        "id",
+                        "device_id",
+                        "timestamp",
+                        "battery_level"
                     )
                 }
 
                 values { _, input ->
                     listOf(
                         JasyncSaveRecord(
-                            input.primaryKey(),
+                            input.deviceId,
                             input.deviceId,
                             input.timestamp.epochSecond,
                             input.batteryLevel
@@ -122,7 +108,7 @@ class R2dbcJasyncSaveAndPoll {
             }
             .innerJoin(
                 using = { correlationRecord ->
-                    correlationRecord.value.primaryKey()
+                    correlationRecord.value.deviceId
                 },
                 on = {
                     it.r2dbcJasync().poll {
@@ -130,23 +116,28 @@ class R2dbcJasyncSaveAndPoll {
                         protocol(Protocol.POSTGRESQL)
 
                         connection {
-                            database = databaseConfiguration.databaseName
-                            port = databaseConfiguration.port
-                            username = databaseConfiguration.userName
-                            password = databaseConfiguration.password
+                            database = "postgres"
+                            port = 15432
+                            username = "postgres"
+                            password = "root"
                         }
 
-                        query("select * from ${databaseConfiguration.tableName} order by \"${BatteryStateContract.TIMESTAMP}\"")
+                        query("select * from battery_state order by \"timestamp\"")
 
                         pollDelay(Duration.ofSeconds(1))
                     }
                         .flatten()
                         .map { record ->
-                            objectMapper.convertValue(record.value, BatteryState::class.java)
+                            val batteryState = record.value
+                            BatteryState(
+                                deviceId = batteryState.getValue("device_id") as String,
+                                batteryLevel = batteryState.getValue("battery_level") as Int,
+                                timestamp = Instant.ofEpochSecond((batteryState.getValue("timestamp") as Int).toLong())
+                            )
                         }
                 },
                 having = { correlationRecord ->
-                    correlationRecord.value.primaryKey()
+                    correlationRecord.value.deviceId
                 }
             )
             .filterNotNull()

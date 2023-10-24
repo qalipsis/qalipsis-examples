@@ -28,9 +28,6 @@ import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.innerJoin
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.verify
-import io.qalipsis.examples.utils.BatteryState
-import io.qalipsis.examples.utils.ScenarioConfiguration
-import io.qalipsis.examples.utils.ServerConfiguration
 import io.qalipsis.plugins.jackson.csv.csvToObject
 import io.qalipsis.plugins.jackson.jackson
 import io.qalipsis.plugins.jms.consumer.consume
@@ -39,6 +36,7 @@ import io.qalipsis.plugins.jms.jms
 import io.qalipsis.plugins.jms.producer.JmsMessageType
 import io.qalipsis.plugins.jms.producer.JmsProducerRecord
 import io.qalipsis.plugins.jms.producer.produce
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.apache.activemq.ActiveMQConnectionFactory
 import org.apache.activemq.command.ActiveMQQueue
 
@@ -48,26 +46,27 @@ class JmsProduceAndConsume {
         it.registerModule(JavaTimeModule())
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Scenario("jms-produce-and-consume")
     fun scenarioProduceAndConsume() {
 
-        //we define the scenario, set the name, number of minions and rampUp
+        // we define the scenario, set the name, number of minions and rampUp
         scenario {
-            minionsCount = ScenarioConfiguration.NUMBER_MINION
+            minionsCount = 20
             profile {
                 regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
             }
         }
             .start()
-            .jackson() //we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
-            .csvToObject(BatteryState::class) {
+            .jackson() // we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
+            .csvToObject(mappingClass = BatteryState::class) {
 
-                classpath("battery-levels.csv")
+                classpath(path = "battery-levels.csv")
                 // we define the header of the csv file
                 header {
-                    column("deviceId")
-                    column("timestamp")
-                    column("batteryLevel").integer()
+                    column(name = "deviceId")
+                    column(name = "timestamp")
+                    column(name = "batteryLevel").integer()
                 }
                 unicast()
             }
@@ -76,13 +75,13 @@ class JmsProduceAndConsume {
             .produce {
 
                 connect {
-                    ActiveMQConnectionFactory(ServerConfiguration.SERVER_URL).createConnection()
+                    ActiveMQConnectionFactory("tcp://localhost:61616").createConnection()
                 }
 
                 records { _, input ->
                     listOf(
                         JmsProducerRecord(
-                            destination = ActiveMQQueue().createDestination(ServerConfiguration.QUEUE_NAME),
+                            destination = ActiveMQQueue().createDestination("battery_state"),
                             messageType = JmsMessageType.BYTES,
                             value = objectMapper.writeValueAsBytes(input)
                         )
@@ -94,13 +93,13 @@ class JmsProduceAndConsume {
             }
             .innerJoin(
                 using = { correlationRecord ->
-                    correlationRecord.value.primaryKey()
+                    correlationRecord.value.deviceId
                 },
 
                 on = {
                     it.jms().consume {
-                        queues(ServerConfiguration.QUEUE_NAME)
-                        queueConnection { ActiveMQConnectionFactory(ServerConfiguration.SERVER_URL).createQueueConnection() }
+                        queues("battery_state")
+                        queueConnection { ActiveMQConnectionFactory("tcp://localhost:61616").createQueueConnection() }
                     }
                         .deserialize(JmsJsonDeserializer(targetClass = BatteryState::class))
                         .map { result ->
@@ -110,7 +109,7 @@ class JmsProduceAndConsume {
                 },
 
                 having = { correlationRecord ->
-                    correlationRecord.value.primaryKey()
+                    correlationRecord.value.deviceId
                 }
             )
             .filterNotNull()

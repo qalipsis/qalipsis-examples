@@ -32,15 +32,13 @@ import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.innerJoin
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.verify
-import io.qalipsis.examples.utils.BatteryState
-import io.qalipsis.examples.utils.ScenarioConfiguration.NUMBER_MINION
-import io.qalipsis.examples.utils.ServerConfiguration
 import io.qalipsis.plugins.jackson.csv.csvToObject
 import io.qalipsis.plugins.jackson.jackson
 import io.qalipsis.plugins.rabbitmq.consumer.consume
 import io.qalipsis.plugins.rabbitmq.producer.RabbitMqProducerRecord
 import io.qalipsis.plugins.rabbitmq.producer.produce
 import io.qalipsis.plugins.rabbitmq.rabbitmq
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.io.IOException
 
 class RabbitmqProduceAndConsume {
@@ -59,20 +57,21 @@ class RabbitmqProduceAndConsume {
         channel.queueBind(queue, queueName, routingKey)
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Scenario("rabbitmq-produce-and-consume")
     fun rabbitmqProduceAndConsume() {
 
         // This code creates the exchange and the queue that will be used by the scenario prior to its execution.
         try {
             ConnectionFactory().apply {
-                host = ServerConfiguration.HOST
-                port = ServerConfiguration.PORT
-                username = ServerConfiguration.USER_NAME
-                password = ServerConfiguration.PASSWORD
+                host = "localhost"
+                port = 5672
+                username = "qalipsis"
+                password = "qalipsis"
                 createExchangeAndQueue(
-                    newConnection().createChannel(),
-                    ServerConfiguration.EXCHANGE,
-                    ServerConfiguration.EXCHANGE
+                    channel = newConnection().createChannel(),
+                    queueName = "battery_state",
+                    routingKey = "battery_state"
                 )
             }
         } catch (e: IOException) {
@@ -80,21 +79,21 @@ class RabbitmqProduceAndConsume {
         }
 
         scenario {
-            minionsCount = NUMBER_MINION
+            minionsCount = 10
             profile {
                 regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
             }
         }
             .start()
-            .jackson() //we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
-            .csvToObject(BatteryState::class) {
+            .jackson() // we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
+            .csvToObject(mappingClass = BatteryState::class) {
 
-                classpath("battery-levels.csv")
+                classpath(path = "battery-levels.csv")
                 // we define the header of the csv file
                 header {
-                    column("deviceId")
-                    column("timestamp")
-                    column("batteryLevel").integer()
+                    column(name = "deviceId")
+                    column(name = "timestamp")
+                    column(name = "batteryLevel").integer()
                 }
                 unicast()
             }
@@ -103,18 +102,18 @@ class RabbitmqProduceAndConsume {
             .produce {
 
                 connection {
-                    host = ServerConfiguration.HOST
-                    port = ServerConfiguration.PORT
-                    username = ServerConfiguration.USER_NAME
-                    password = ServerConfiguration.PASSWORD
+                    host = "localhost"
+                    port = 5672
+                    username = "qalipsis"
+                    password = "qalipsis"
 
                 }
 
                 records { _, input ->
                     listOf(
                         RabbitMqProducerRecord(
-                            exchange = ServerConfiguration.EXCHANGE,
-                            routingKey = ServerConfiguration.EXCHANGE,
+                            exchange = "battery_state",
+                            routingKey = "battery_state",
                             props = null,
                             value = objectMapper.writeValueAsBytes(input)
                         )
@@ -126,30 +125,30 @@ class RabbitmqProduceAndConsume {
             }
             .innerJoin(
                 using = { correlationRecord ->
-                    correlationRecord.value.primaryKey
+                    correlationRecord.value.deviceId
                 },
                 on = {
                     it.rabbitmq()
                         .consume {
                             name = "consume"
                             connection {
-                                host = ServerConfiguration.HOST
-                                port = ServerConfiguration.PORT
-                                username = ServerConfiguration.USER_NAME
-                                password = ServerConfiguration.PASSWORD
+                                host = "localhost"
+                                port = 5672
+                                username = "qalipsis"
+                                password = "qalipsis"
                             }
 
-                            queue(ServerConfiguration.EXCHANGE)
+                            queue(queueName = "battery_state")
 
                         }
-                        .deserialize(MessageJsonDeserializer(BatteryState::class)) // use this method to transform your RabbitMQ consumer data to a specific object of your class
+                        .deserialize(valueDeserializer = MessageJsonDeserializer(BatteryState::class)) // use this method to transform your RabbitMQ consumer data to a specific object of your class
                         .map { result ->
                             result.value
                         }
                         .filterNotNull()
                 },
                 having = { correlationRecord ->
-                    correlationRecord.value.primaryKey
+                    correlationRecord.value.deviceId
                 }
             )
             .filterNotNull()

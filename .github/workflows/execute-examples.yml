@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    timeout-minutes: 25
+    timeout-minutes: 30
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -45,6 +45,9 @@ jobs:
 
       - name: Elasticsearch Save and search
         run: (docker-compose -f elasticsearch/docker-compose.yml up -d && sleep 10 && ./gradlew :elasticsearch:runCampaignForSaveAndSearch); docker-compose -f elasticsearch/docker-compose.yml down -v
+
+      - name: Graphite Save and poll
+        run: (docker-compose -f graphite/docker-compose.yml up -d && sleep 75 && ./gradlew :graphite:runCampaignForSaveAndPoll); docker-compose -f graphite/docker-compose.yml down -v
 
       - name: Influxdb Save and poll
         run: (docker-compose -f influxdb/docker-compose.yml up -d && sleep 10 && ./gradlew :influxdb:runCampaignForSaveAndPoll); docker-compose -f influxdb/docker-compose.yml down -v

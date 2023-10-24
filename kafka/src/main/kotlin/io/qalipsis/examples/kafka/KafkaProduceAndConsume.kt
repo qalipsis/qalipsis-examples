@@ -24,9 +24,6 @@ import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.innerJoin
 import io.qalipsis.api.steps.map
-import io.qalipsis.examples.utils.BatteryState
-import io.qalipsis.examples.utils.ScenarioConfiguration
-import io.qalipsis.examples.utils.ServerConfiguration
 import io.qalipsis.plugins.jackson.csv.csvToObject
 import io.qalipsis.plugins.jackson.jackson
 import io.qalipsis.plugins.kafka.consumer.consume
@@ -48,23 +45,23 @@ class KafkaProduceAndConsume {
     @Scenario("kafka-produce-and-consume")
     fun scenarioSaveAndPoll() {
 
-        //we define the scenario, set the name, number of minions and rampUp
+        // we define the scenario, set the name, number of minions and rampUp
         scenario {
-            minionsCount = ScenarioConfiguration.NUMBER_MINION
+            minionsCount = 20
             profile {
                 regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
             }
         }
             .start()
-            .jackson() //we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
-            .csvToObject(BatteryState::class) {
+            .jackson() // we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
+            .csvToObject(mappingClass = BatteryState::class) {
 
-                classpath("battery-levels.csv")
+                classpath(path = "battery-levels.csv")
                 // we define the header of the csv file
                 header {
-                    column("deviceId")
-                    column("timestamp")
-                    column("batteryLevel").integer()
+                    column(name = "deviceId")
+                    column(name = "timestamp")
+                    column(name = "batteryLevel").integer()
                 }
                 unicast()
             }
@@ -74,14 +71,14 @@ class KafkaProduceAndConsume {
                 keySerializer = Serdes.String().serializer(),
                 valueSerializer = Serdes.String().serializer()
             ) {
-                bootstrap(ServerConfiguration.SERVER_BOOTSTRAP)
+                bootstrap("localhost:9092")
                 clientName("producer")
                 records { _, input ->
                     listOf(
                         KafkaProducerRecord(
-                            ServerConfiguration.TOPIC,
+                            "battery_state",
                             value = objectMapper.writeValueAsString(input),
-                            key = input.primaryKey
+                            key = input.deviceId
                         )
                     )
                 }
@@ -89,14 +86,14 @@ class KafkaProduceAndConsume {
             .map { it.input }
             .innerJoin(
                 using = { correlationRecord ->
-                    correlationRecord.value.primaryKey
+                    correlationRecord.value.deviceId
                 },
                 on = {
                     it.kafka().consume {
-                        bootstrap(ServerConfiguration.SERVER_BOOTSTRAP)
-                        topics(ServerConfiguration.TOPIC) //Define which topic we want to listen
+                        bootstrap("localhost:9092")
+                        topics("battery_state") // Define which topic we want to listen
                         groupId("kafka-example")
-                        offsetReset(OffsetResetStrategy.EARLIEST) //where we want to start consume. EARLIEST starts consuming messages from the beginning of the queue
+                        offsetReset(OffsetResetStrategy.EARLIEST) // where we want to start consume. EARLIEST starts consuming messages from the beginning of the queue
                         pollTimeout(Duration.ofSeconds(1))
                     }
                         .flatten(Serdes.String().deserializer(), jsonSerde<BatteryState>().deserializer())
@@ -106,7 +103,7 @@ class KafkaProduceAndConsume {
                         .filterNotNull()
                 },
                 having = { correlationRecord ->
-                    correlationRecord.value.primaryKey
+                    correlationRecord.value.deviceId
                 }
             )
     }

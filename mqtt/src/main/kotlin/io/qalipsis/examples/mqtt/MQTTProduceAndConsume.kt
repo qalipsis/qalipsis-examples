@@ -10,9 +10,6 @@ import io.qalipsis.api.executionprofile.regular
 import io.qalipsis.api.messaging.deserializer.MessageJsonDeserializer
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.*
-import io.qalipsis.examples.utils.BatteryState
-import io.qalipsis.examples.utils.ScenarioConfiguration
-import io.qalipsis.examples.utils.ServerConfiguration
 import io.qalipsis.plugins.jackson.csv.csvToObject
 import io.qalipsis.plugins.jackson.jackson
 import io.qalipsis.plugins.netty.mqtt.publisher.MqttPublishRecord
@@ -31,27 +28,27 @@ class MQTTProduceAndConsume {
     fun mqttProduceAndConsume() {
 
         scenario {
-            minionsCount = ScenarioConfiguration.NUMBER_MINION
+            minionsCount = 20
             profile {
                 regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
             }
         }.start()
-            .jackson() //we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
-            .csvToObject(BatteryState::class) {
+            .jackson() // we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
+            .csvToObject(mappingClass = BatteryState::class) {
 
-                classpath("battery-levels.csv")
+                classpath(path = "battery-levels.csv")
                 // we define the header of the csv file
                 header {
-                    column("deviceId")
-                    column("timestamp")
-                    column("batteryLevel").integer()
+                    column(name = "deviceId")
+                    column(name = "timestamp")
+                    column(name = "batteryLevel").integer()
                 }
                 unicast()
             }.map { it.value } // we transform the output of the CSV reader entries to utils.BatteryState
             .netty().mqttPublish {
                 connect {
-                    host = ServerConfiguration.HOST
-                    port = ServerConfiguration.PORT
+                    host = "localhost"
+                    port = 11883
                 }
 
                 clientName("qalipsis-mqtt-client")
@@ -60,28 +57,25 @@ class MQTTProduceAndConsume {
                     listOf(
                         MqttPublishRecord(
                             value = objectMapper.writeValueAsString(batteryState),
-                            topicName = ServerConfiguration.TOPIC_NAME
+                            topicName = "battery-state"
                         )
                     )
                 }
             }.map { it.input }.innerJoin(using = { correlationRecord ->
-                println("Using ${correlationRecord.value}")
-                correlationRecord.value.primaryKey
+                correlationRecord.value.deviceId
             }, on = {
                 it.netty().mqttSubscribe {
-                        connect {
-                            host = ServerConfiguration.HOST
-                            port = ServerConfiguration.PORT
-                        }
-                        clientName("qalipsis-mqtt-client-subscriber")
-                        topicFilter(ServerConfiguration.TOPIC_NAME)
-                    }.deserialize(MessageJsonDeserializer(BatteryState::class)).map { result ->
-                        println("on ${result.value}")
-                        result.value
-                    }.filterNotNull()
+                    connect {
+                        host = "localhost"
+                        port = 11883
+                    }
+                    clientName("qalipsis-mqtt-client-subscriber")
+                    topicFilter("battery-state")
+                }.deserialize(MessageJsonDeserializer(BatteryState::class)).map { result ->
+                    result.value
+                }.filterNotNull()
             }, having = { correlationRecord ->
-                println("Having ${correlationRecord.value}")
-                correlationRecord.value.primaryKey
+                correlationRecord.value.deviceId
             }).filterNotNull().verify { result ->
                 result.asClue {
                     assertSoftly {

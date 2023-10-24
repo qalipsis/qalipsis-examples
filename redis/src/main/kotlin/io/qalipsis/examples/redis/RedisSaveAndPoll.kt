@@ -28,10 +28,6 @@ import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.innerJoin
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.verify
-import io.qalipsis.examples.utils.BatteryState
-import io.qalipsis.examples.utils.BatteryStateContract
-import io.qalipsis.examples.utils.ScenarioConfiguration
-import io.qalipsis.examples.utils.ServerConfiguration
 import io.qalipsis.plugins.jackson.csv.csvToObject
 import io.qalipsis.plugins.jackson.jackson
 import io.qalipsis.plugins.redis.lettuce.configuration.RedisConnectionType
@@ -51,38 +47,40 @@ class RedisSaveAndPoll {
     fun redisSaveAndPoll() {
 
         scenario {
-            minionsCount = ScenarioConfiguration.NUMBER_MINION
+            minionsCount = 20
             profile {
                 regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
             }
         }
             .start()
-            .jackson() //we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
-            .csvToObject(BatteryState::class) {
+            .jackson() // we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
+            .csvToObject(mappingClass = BatteryState::class) {
 
-                classpath("battery-levels.csv")
+                classpath(path = "battery-levels.csv")
                 // we define the header of the csv file
                 header {
-                    column("device_id")
-                    column("timestamp")
-                    column("battery_level").integer()
+                    column(name = "device_id")
+                    column(name = "timestamp")
+                    column(name = "battery_level").integer()
                 }
                 unicast()
             }
-            .map { it.value }
+            .map {
+                it.value
+            }
             .redisLettuce()
             .save {
                 connection {
-                    nodes = ServerConfiguration.NODES
-                    database = ServerConfiguration.DATABASE
+                    nodes = listOf("localhost:6379")
+                    database = 0
                     redisConnectionType = RedisConnectionType.SINGLE
-                    authPassword = ServerConfiguration.PASSWORD
-                    authUser = ServerConfiguration.USER_NAME
+                    authPassword = ""
+                    authUser = ""
                 }
 
                 records { _, input ->
                     listOf(
-                        SetRecord(BatteryStateContract.KEY_FOR_SAVE_AND_POLL,
+                        SetRecord("battery_state_save_and_poll",
                             objectMapper.writeValueAsString(input)
                         )
                     )
@@ -92,31 +90,31 @@ class RedisSaveAndPoll {
                 it.input
             }
             .innerJoin(
-                using = {correlationRecord -> correlationRecord.value.primaryKey() },
+                using = {correlationRecord -> correlationRecord.value.deviceId },
 
                 on = {
                     it.redisLettuce()
                         .pollSscan {
                             connection {
-                                nodes = ServerConfiguration.NODES
-                                database = ServerConfiguration.DATABASE
+                                nodes = listOf("localhost:6379")
+                                database = 0
                                 redisConnectionType = RedisConnectionType.SINGLE
-                                authPassword = ServerConfiguration.PASSWORD
-                                authUser = ServerConfiguration.USER_NAME
+                                authPassword = ""
+                                authUser = ""
                             }
 
-                            keyOrPattern(BatteryStateContract.KEY_FOR_SAVE_AND_POLL)
+                            keyOrPattern("battery_state_save_and_poll")
 
                             pollDelay(Duration.ofSeconds(1))
                         }
                         .flatten()
                         .map{ result ->
-                            val batteryState = objectMapper.readValue(result.value,BatteryState::class.java)
+                            val batteryState = objectMapper.readValue(result.value, BatteryState::class.java)
                             batteryState
                         }
                 },
 
-                having = {correlationRecord -> correlationRecord.value.primaryKey()}
+                having = {correlationRecord -> correlationRecord.value.deviceId}
             )
             .filterNotNull()
             .verify { result ->

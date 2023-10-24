@@ -25,10 +25,6 @@ import io.qalipsis.api.executionprofile.regular
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.verify
-import io.qalipsis.examples.utils.BatteryState
-import io.qalipsis.examples.utils.BatteryStateContract
-import io.qalipsis.examples.utils.DatabaseConfiguration
-import io.qalipsis.examples.utils.ScenarioConfiguration.NUMBER_MINION
 import io.qalipsis.plugins.influxdb.influxdb
 import io.qalipsis.plugins.influxdb.save.save
 import io.qalipsis.plugins.influxdb.search.search
@@ -38,24 +34,24 @@ import java.time.Instant
 
 class InfluxdbSaveAndSearch {
     @Scenario("influxdb-save-and-search")
-    fun elasticSearchSaveAndPoll() {
+    fun influxdbSearchSaveAndPoll() {
 
         scenario {
-            minionsCount = NUMBER_MINION
+            minionsCount = 20
             profile {
                 regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
             }
         }
             .start()
-            .jackson() //we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
-            .csvToObject(BatteryState::class) {
+            .jackson() // we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
+            .csvToObject(mappingClass = BatteryState::class) {
 
-                classpath("battery-levels.csv")
+                classpath(path = "battery-levels.csv")
                 // we define the header of the csv file
                 header {
-                    column("deviceId")
-                    column("timestamp")
-                    column("batteryLevel").integer()
+                    column(name = "deviceId")
+                    column(name = "timestamp")
+                    column(name = "batteryLevel").integer()
                 }
                 unicast()
             }
@@ -64,24 +60,24 @@ class InfluxdbSaveAndSearch {
             .save {
                 connect {
                     server(
-                        url = DatabaseConfiguration.SERVER_URL,
-                        bucket = DatabaseConfiguration.BUCKET,
-                        org = DatabaseConfiguration.ORGANISATION
+                        url = "http://localhost:18086",
+                        bucket = "iot",
+                        org = "qalipsis"
                     )
-                    basic(user = DatabaseConfiguration.USER_NAME, password = DatabaseConfiguration.PASSWORD)
+                    basic(user = "qalipsis_user", password = "qalipsis_user_password")
                 }
 
                 query {
-                    bucket = { _, _ -> DatabaseConfiguration.BUCKET }
+                    bucket = { _, _ -> "iot" }
 
-                    organization = { _, _ -> DatabaseConfiguration.ORGANISATION }
+                    organization = { _, _ -> "qalipsis" }
 
                     points = { _, input ->
                         listOf(
-                            Point.measurement(BatteryStateContract.MEASUREMENT)
-                                .addField(BatteryStateContract.BATTERY_LEVEL, input.batteryLevel)
-                                .addTag(BatteryStateContract.DEVICE_ID, input.deviceId)
-                                .addTag(BatteryStateContract.TIMESTAMP, input.timestamp.epochSecond.toString())
+                            Point.measurement("battery_state")
+                                .addField("battery_level", input.batteryLevel)
+                                .addTag("device_id", input.deviceId)
+                                .addTag("timestamp", input.timestamp.epochSecond.toString())
                         )
                     }
 
@@ -95,21 +91,21 @@ class InfluxdbSaveAndSearch {
 
                 connect {
                     server(
-                        url = DatabaseConfiguration.SERVER_URL,
-                        bucket = DatabaseConfiguration.BUCKET,
-                        org = DatabaseConfiguration.ORGANISATION
+                        url = "http://localhost:18086",
+                        bucket = "iot",
+                        org = "qalipsis"
                     )
-                    basic(user = DatabaseConfiguration.USER_NAME, password = DatabaseConfiguration.PASSWORD)
+                    basic(user = "qalipsis_user", password = "qalipsis_user_password")
                 }
 
                 query { _, input ->
                     """
-                        from(bucket: "${DatabaseConfiguration.BUCKET}")
+                        from(bucket: "iot")
                                 |> range(start: -15m)
                                 |> filter(
-                                    fn: (r) => r._measurement == "${BatteryStateContract.MEASUREMENT}" and
-                                        r.${BatteryStateContract.DEVICE_ID} == "${input.deviceId}" and
-                                        r.${BatteryStateContract.TIMESTAMP} == "${input.timestamp.epochSecond}"
+                                    fn: (r) => r._measurement == "battery_state" and
+                                        r.device_id == "${input.deviceId}" and
+                                        r.timestamp == "${input.timestamp.epochSecond}"
                                     )               
                     """.trimIndent()
                 }
@@ -118,9 +114,9 @@ class InfluxdbSaveAndSearch {
             .map {
                 it.input to it.results.map { fluxRecord ->
                     BatteryState(
-                        deviceId = fluxRecord.values[BatteryStateContract.DEVICE_ID] as String,
-                        timestamp = Instant.ofEpochSecond((fluxRecord.values[BatteryStateContract.TIMESTAMP] as String).toLong()),
-                        batteryLevel = (fluxRecord.value as Number).toInt()
+                        deviceId = fluxRecord.values["device_id"] as String,
+                        batteryLevel = (fluxRecord.value as Number).toInt(),
+                        timestamp = Instant.ofEpochSecond((fluxRecord.values["timestamp"] as String).toLong())
                     )
                 }
             }

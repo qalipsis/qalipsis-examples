@@ -33,5 +33,6 @@ include(
     "rabbitmq",
     "jms",
     "mqtt",
-    "jakarta-ee-messaging"
+    "jakarta-ee-messaging",
+    "graphite"
 )

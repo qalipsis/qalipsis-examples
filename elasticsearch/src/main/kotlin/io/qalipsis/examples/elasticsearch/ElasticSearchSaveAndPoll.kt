@@ -30,9 +30,6 @@ import io.qalipsis.api.steps.flatten
 import io.qalipsis.api.steps.innerJoinUncasted
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.verify
-import io.qalipsis.examples.utils.BatteryState
-import io.qalipsis.examples.utils.BatteryStateContract
-import io.qalipsis.examples.utils.ScenarioConfiguration.NUMBER_MINION
 import io.qalipsis.plugins.elasticsearch.Document
 import io.qalipsis.plugins.elasticsearch.elasticsearch
 import io.qalipsis.plugins.elasticsearch.poll.poll
@@ -50,24 +47,24 @@ class ElasticSearchSaveAndPoll {
     }
 
     @Scenario("elasticsearch-save-and-poll")
-    fun elasticSearchSaveAndPoll(){
+    fun elasticSearchSaveAndPoll() {
 
         scenario {
-            minionsCount = NUMBER_MINION
+            minionsCount = 10
             profile {
                 regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
             }
         }
             .start()
-            .jackson() //we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
-            .csvToObject(BatteryState::class) {
+            .jackson() // we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
+            .csvToObject(mappingClass = BatteryState::class) {
 
-                classpath("battery-levels.csv")
+                classpath(path = "battery-levels.csv")
                 // we define the header of the csv file
                 header {
-                    column("deviceId")
-                    column("timestamp")
-                    column("batteryLevel").integer()
+                    column(name = "deviceId")
+                    column(name = "timestamp")
+                    column(name = "batteryLevel").integer()
                 }
                 unicast()
             }
@@ -76,21 +73,24 @@ class ElasticSearchSaveAndPoll {
             .save {
                 name = "save"
                 client {
-                    RestClient.builder(HttpHost.create("http://localhost:9200")).build() // we create the rest client that will help to submit request to elastic search
+                    RestClient.builder(HttpHost.create("http://localhost:9200"))
+                        .build() // we create the rest client that will help to submit request to elastic search
                 }
 
                 documents { _, input ->
-                    listOf(Document(
-                        index = BatteryStateContract.INDEX,
-                        id = input.primaryKey,
-                        source = objectMapper.writeValueAsString(input) // we parse to json the object we want to save
-                    ))
+                    listOf(
+                        Document(
+                            index = "battery-state",
+                            id = input.deviceId,
+                            source = objectMapper.writeValueAsString(input) // we parse to json the object we want to save
+                        )
+                    )
                 }
             }
             .map { it.input }
-            .delay(Duration.ofSeconds(2)) // a small delay of 2 seconds before proceed, because on elastic search persistence of data is not immediate
+            .delay(duration = Duration.ofSeconds(2)) // a small delay of 2 seconds before proceed, because on elastic search persistence of data is not immediate
             .innerJoinUncasted(
-                using = {correlationRecord -> correlationRecord.value.primaryKey },
+                using = { correlationRecord -> correlationRecord.value.deviceId },
                 on = {
                     it.elasticsearch().poll {
                         name = "poll"
@@ -103,16 +103,16 @@ class ElasticSearchSaveAndPoll {
                                 "sort" : ["_score"]
                             }""".trimIndent()
                         }
-                        index(BatteryStateContract.INDEX) // we specify the table where we want to fetch data
-                        pollDelay(Duration.ofSeconds(1)) // we pull data every 2 seconds to avoid saturate the server with requests
+                        index("battery-state") // we specify the table where we want to fetch data
+                        pollDelay(delay = Duration.ofSeconds(1)) // we pull data every 2 seconds to avoid saturate the server with requests
                     }
-                        .deserialize(BatteryState::class) // use this method to transform your elastic search result to a specific object of your class
+                        .deserialize(targetClass = BatteryState::class) // use this method to transform your elastic search result to a specific object of your class
                         .flatten()
-                        .map{record ->
+                        .map { record ->
                             record.value
                         }
                 },
-                having = {correlationRecord -> (correlationRecord.value as BatteryState).primaryKey}
+                having = { correlationRecord -> (correlationRecord.value as BatteryState).deviceId }
             )
             .filterNotNull()
             .verify { result ->

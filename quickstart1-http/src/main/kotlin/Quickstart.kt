@@ -55,7 +55,7 @@ class Quickstart {
                     reportErrors = true
                 }
                 connect {
-                    url("https://localhost:18443")
+                    url(url = "https://localhost:18443")
                     connectTimeout = Duration.ofMillis(500)
                     version = HttpVersion.HTTP_2_0
                     tls { disableCertificateVerification = true }

@@ -35,8 +35,8 @@ kapt {
 }
 
 dependencies {
-    implementation(platform("io.qalipsis:qalipsis-platform:0.7.b-SNAPSHOT"))
-    kapt(platform("io.qalipsis:qalipsis-platform:0.7.b-SNAPSHOT"))
+    implementation(platform("io.qalipsis:qalipsis-platform:0.7.c-SNAPSHOT"))
+    kapt(platform("io.qalipsis:qalipsis-platform:0.7.c-SNAPSHOT"))
     kapt("io.qalipsis:qalipsis-api-processors")
 
     implementation(kotlin("stdlib"))

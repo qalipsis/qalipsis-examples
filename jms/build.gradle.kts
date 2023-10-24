@@ -44,9 +44,16 @@ tasks.withType<ShadowJar> {
     isZip64 = true
 }
 
+repositories {
+    maven {
+        name = "jitpack-dependencies"
+        setUrl("https://jitpack.io")
+    }
+}
+
 dependencies {
-    implementation(platform("io.qalipsis:qalipsis-platform:0.7.b-SNAPSHOT"))
-    kapt(platform("io.qalipsis:qalipsis-platform:0.7.b-SNAPSHOT"))
+    implementation(platform("io.qalipsis:qalipsis-platform:0.7.c-SNAPSHOT"))
+    kapt(platform("io.qalipsis:qalipsis-platform:0.7.c-SNAPSHOT"))
     kapt("io.qalipsis:qalipsis-api-processors")
 
     runtimeOnly("io.qalipsis:qalipsis-runtime")

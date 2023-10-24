@@ -78,7 +78,7 @@ class DistributedSystemScenario(
         scenario {
             minionsCount = 100
             profile {
-                regular(500, 50)
+                regular(periodMs = 500, minionsCountProLaunch = 50)
             }
         }
             .start()
@@ -86,7 +86,7 @@ class DistributedSystemScenario(
             .http {
                 name = "http-data-push-without-login"
                 connect {
-                    url(serverUrl)
+                    url(url = serverUrl)
                     connectTimeout = Duration.ofMillis(2000)
                     version = HttpVersion.HTTP_2_0
                     tls { disableCertificateVerification = true }
@@ -98,14 +98,14 @@ class DistributedSystemScenario(
                     events = true
                 }
                 request { _, _ ->
-                    SimpleHttpRequest(HttpMethod.POST, "/data").body(
+                    SimpleHttpRequest(method = HttpMethod.POST, uri = "/data").body(
                         "Nothing received here",
                         HttpHeaderValues.TEXT_PLAIN
                     )
                 }
             }
             .verify { result ->
-                assertThat(result.response!!.status).isEqualTo(HttpResponseStatus.UNAUTHORIZED)
+                assertThat(actual = result.response!!.status).isEqualTo(expected = HttpResponseStatus.UNAUTHORIZED)
             }.configure {
                 name = "Verify the data push without login"
             }
@@ -114,14 +114,17 @@ class DistributedSystemScenario(
                 name = "http-login"
                 request { _, _ ->
                     SimpleHttpRequest(HttpMethod.POST, "/login")
-                        .body("""{ "username": "test", "password": "test" }""", HttpHeaderValues.APPLICATION_JSON)
+                        .body(
+                            body = """{ "username": "test", "password": "test" }""",
+                            contentType = HttpHeaderValues.APPLICATION_JSON
+                        )
                 }
                 monitoring {
                     events = true
                 }
             }
             .verify { result ->
-                assertThat(result).all {
+                assertThat(actual = result).all {
                     prop(RequestResult<*, HttpResponse<String>, *>::response).isNotNull().all {
                         prop(HttpResponse<*>::status).isEqualTo(HttpResponseStatus.SEE_OTHER)
                         prop(HttpResponse<*>::headers).key("location").isEqualTo("/")
@@ -167,8 +170,11 @@ class DistributedSystemScenario(
                 deviceState.deviceId = ctx.minionId
                 deviceState.timestamp = System.currentTimeMillis()
                 SimpleHttpRequest(HttpMethod.POST, "/data")
-                    .body(objectMapper.writeValueAsBytes(deviceState), HttpHeaderValues.APPLICATION_JSON)
-                    .addHeader("message-key", ctx.minionId)
+                    .body(
+                        body = objectMapper.writeValueAsBytes(deviceState),
+                        contentType = HttpHeaderValues.APPLICATION_JSON
+                    )
+                    .addHeader(name = "message-key", value = ctx.minionId)
                     .addCookies(cookie)
             }
             monitoring {
@@ -231,7 +237,7 @@ class DistributedSystemScenario(
             .verify {
                 val (deviceState, dbRecord) = it!!
                 // The device state received from Kafka should be similar to the one sent by HTTP.
-                assertThat(dbRecord.value).isNotNull().all {
+                assertThat(actual = dbRecord.value).isNotNull().all {
                     key("battery_level_percentage").isEqualTo(deviceState.batteryLevelPercentage)
                     key("position_lat").isNotNull().isInstanceOf(BigDecimal::class).transform { it.toDouble() }
                         .isBetween(deviceState.positionLat - 10e-3, deviceState.positionLat + 10e-3)
@@ -240,7 +246,7 @@ class DistributedSystemScenario(
                     key("message_key").isEqualTo(deviceState.deviceId)
                 }
                 // The device state should be received by saved into Timescale in the next 10 seconds after its push to the HTTP server.
-                assertThat((dbRecord.value["saving_timestamp"] as Long) - deviceState.timestamp).isLessThan(10000)
+                assertThat(actual = (dbRecord.value["saving_timestamp"] as Long) - deviceState.timestamp).isLessThan(10000)
             }.configure {
                 name = "Verify Timescale data"
             }
@@ -260,7 +266,7 @@ class DistributedSystemScenario(
                         name = "consume-http-requests"
                         bootstrap(kafkaBootstrap)
                         topics("http-request")
-                        groupId("distributed-system-scenario-demo")
+                        groupId(groupId = "distributed-system-scenario-demo")
                         properties(
                             "max.poll.records" to "2000",
                             "fetch.max.wait.ms" to "500",
@@ -269,14 +275,14 @@ class DistributedSystemScenario(
                             "max.partition.fetch.bytes" to "52428800",
                             "max.poll.records" to "1000"
                         )
-                        pollTimeout(1000)
-                        offsetReset(OffsetResetStrategy.EARLIEST)
+                        pollTimeout(pollTimeout = 1000)
+                        offsetReset(offsetReset = OffsetResetStrategy.EARLIEST)
                     }.flatten(Serdes.ByteArray().deserializer(), jsonSerde<DeviceState>().deserializer())
             },
             having = { correlationRecord -> correlationRecord.value.record.value!!.deviceId }
         ).configure {
             name = "join-request-with-kafka"
-            timeout(20_000) // We expect the Kafka record to be available in the next 20 seconds.
+            timeout(duration = 20_000) // We expect the Kafka record to be available in the next 20 seconds.
             report {
                 reportErrors = true
             }
@@ -294,9 +300,9 @@ class DistributedSystemScenario(
             .verify {
                 val (deviceState, kafkaResult) = it!!
                 // The device state received from Kafka should be similar to the one sent by HTTP.
-                assertThat(kafkaResult.record.value).isNotNull().isDataClassEqualTo(deviceState)
+                assertThat(actual = kafkaResult.record.value).isNotNull().isDataClassEqualTo(deviceState)
                 // The device state should be received by Kafka in the next 5 seconds after its push to the HTTP server.
-                assertThat(kafkaResult.record.receivedTimestamp - deviceState.timestamp).isLessThan(5000)
+                assertThat(actual = kafkaResult.record.receivedTimestamp - deviceState.timestamp).isLessThan(5000)
             }.configure {
                 name = "Verify Kafka data"
             }
