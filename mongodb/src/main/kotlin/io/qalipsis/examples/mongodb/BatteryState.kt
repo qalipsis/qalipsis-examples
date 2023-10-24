@@ -14,10 +14,15 @@
  * permissions and limitations under the License.
  */
 
-package io.qalipsis.examples.utils
+package io.qalipsis.examples.mongodb
 
-object DatabaseConfiguration {
-    const val DATABASE = "iot"
-    const val COLLECTION = "batteryState"
-    const val SERVER_LINK = "mongodb://localhost:27018"
-}
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import java.time.Instant
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class BatteryState(
+    val deviceId: String,
+    val timestamp: Instant,
+    val batteryLevel: Int,
+)
+

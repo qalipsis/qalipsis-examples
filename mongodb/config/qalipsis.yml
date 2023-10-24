@@ -6,3 +6,8 @@ campaign:
 
 events:
   root: WARN
+
+report:
+  export:
+    console-live:
+      enabled: false

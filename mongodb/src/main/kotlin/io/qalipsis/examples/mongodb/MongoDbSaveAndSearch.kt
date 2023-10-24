@@ -27,16 +27,13 @@ import io.qalipsis.api.executionprofile.regular
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.verify
-import io.qalipsis.examples.utils.BatteryState
-import io.qalipsis.examples.utils.BatteryStateContract
-import io.qalipsis.examples.utils.DatabaseConfiguration
-import io.qalipsis.examples.utils.ScenarioConfiguration.NUMBER_MINION
 import io.qalipsis.plugins.jackson.csv.csvToObject
 import io.qalipsis.plugins.jackson.jackson
 import io.qalipsis.plugins.mongodb.mongodb
 import io.qalipsis.plugins.mongodb.save.save
 import io.qalipsis.plugins.mongodb.search.search
 import org.bson.Document
+import java.time.Instant
 
 class MongoDbSaveAndSearch {
 
@@ -46,23 +43,23 @@ class MongoDbSaveAndSearch {
 
     @Scenario("mongodb-save-and-search")
     fun scenarioSaveAndSearch() {
-        //we define the scenario, set the name, number of minions and rampUp
+        // we define the scenario, set the name, number of minions and rampUp
         scenario {
-            minionsCount = NUMBER_MINION
+            minionsCount = 20
             profile {
                 regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
             }
         }
             .start()
-            .jackson() //we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
-            .csvToObject(BatteryState::class) {
+            .jackson() // we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
+            .csvToObject(mappingClass = BatteryState::class) {
 
-                classpath("battery-levels.csv")
+                classpath(path = "battery-levels.csv")
                 // we define the header of the csv file
                 header {
-                    column("deviceId")
-                    column("timestamp")
-                    column("batteryLevel").integer()
+                    column(name = "deviceId")
+                    column(name = "timestamp")
+                    column(name = "batteryLevel").integer()
                 }
                 unicast()
             }
@@ -70,18 +67,18 @@ class MongoDbSaveAndSearch {
             .mongodb()// we start the mongodb step to save data in mongodb database
             .save {
 
-                //setup connection of the database
+                // setup connection of the database
                 connect {
-                    MongoClients.create(DatabaseConfiguration.SERVER_LINK)
+                    MongoClients.create("mongodb://admin:password@localhost:27017")
                 }
 
                 query {
                     database { _, _ ->
-                        DatabaseConfiguration.DATABASE
+                        "iot"
                     }
 
                     collection { _, _ ->
-                        DatabaseConfiguration.COLLECTION
+                        "batteryState"
                     }
 
                     documents { _, input ->
@@ -95,32 +92,35 @@ class MongoDbSaveAndSearch {
                 name = "search"
 
                 connect {
-                    MongoClients.create(DatabaseConfiguration.SERVER_LINK)
+                    MongoClients.create("mongodb://admin:password@localhost:27017")
                 }
 
                 search {
-                    database { _, _ -> DatabaseConfiguration.DATABASE }
-                    collection { _, _ -> DatabaseConfiguration.COLLECTION }
+                    database { _, _ -> "iot" }
+                    collection { _, _ -> "batteryState" }
                     query { _, input ->
                         Document(
                             mapOf(
-                                BatteryStateContract.DEVICE_ID to input.deviceId,
-                                BatteryStateContract.TIMESTAMP to input.timestamp.epochSecond
+                                "deviceId" to input.deviceId,
+                                "timestamp" to input.timestamp.epochSecond
                             )
                         )
                     }
                 }
             }
             .map {
-                it.input to it.documents.map { document ->
-                    objectMapper.readValue(document.toJson(), BatteryState::class.java)
+                it.input to it.documents.first().let { document ->
+                    BatteryState(
+                        deviceId = document.getValue("deviceId") as String,
+                        batteryLevel = document.getValue("batteryLevel") as Int,
+                        timestamp = Instant.ofEpochSecond((document.getValue("timestamp") as Double).toLong())
+                    )
                 }
             }
             .verify { result ->
                 result.asClue {
                     assertSoftly {
-                        it.second.size shouldBeExactly 1
-                        it.first.batteryLevel shouldBeExactly it.second.first().batteryLevel
+                        it.first.batteryLevel shouldBeExactly it.second.batteryLevel
                     }
                 }
             }
