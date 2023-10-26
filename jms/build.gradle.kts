@@ -52,6 +52,7 @@ repositories {
 }
 
 dependencies {
+    api("org.slf4j:slf4j-api:1.7.36")
     implementation(platform("io.qalipsis:qalipsis-platform:0.7.c-SNAPSHOT"))
     kapt(platform("io.qalipsis:qalipsis-platform:0.7.c-SNAPSHOT"))
     kapt("io.qalipsis:qalipsis-api-processors")
