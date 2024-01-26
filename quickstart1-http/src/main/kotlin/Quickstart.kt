@@ -66,6 +66,7 @@ class Quickstart {
                         HttpHeaderValues.TEXT_PLAIN
                     )
                 }
+                monitoring { all() }
             }
             .verify { result ->
                 assertSoftly {
@@ -96,6 +97,7 @@ class Quickstart {
                         HttpHeaderValues.TEXT_PLAIN
                     )
                 }
+                monitoring { all() }
             }.verify { result ->
                 assertSoftly {
                     result.asClue {

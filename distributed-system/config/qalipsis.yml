@@ -53,7 +53,7 @@ campaign:
 
 http:
   server:
-    url: https://localhost:18443
+    url: https://localhost:8443
   client:
     pool:
       size: 50
@@ -67,3 +67,8 @@ jdbc:
   database: qalipsis
   username: qalipsis_demo
   password: qalipsis
+
+report:
+  export:
+    console-live:
+      enabled: true

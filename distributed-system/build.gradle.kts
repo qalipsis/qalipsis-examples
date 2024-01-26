@@ -47,6 +47,10 @@ dependencies {
     kapt(platform("io.qalipsis:qalipsis-platform:0.7.c-SNAPSHOT"))
     kapt("io.qalipsis:qalipsis-api-processors")
 
+    runtimeOnly("io.qalipsis:qalipsis-runtime")
+    runtimeOnly("io.qalipsis:qalipsis-head")
+    runtimeOnly("io.qalipsis:qalipsis-factory")
+
     implementation("io.qalipsis.plugin:qalipsis-plugin-netty")
     implementation("io.qalipsis.plugin:qalipsis-plugin-kafka")
     implementation("io.qalipsis.plugin:qalipsis-plugin-elasticsearch")
@@ -70,7 +74,6 @@ task<JavaExec>("runCampaign") {
         "-XX:InitiatingHeapOccupancyPercent=35",
         "-XX:+ExplicitGCInvokesConcurrent",
         "-XX:MaxInlineLevel=15",
-        "-Djava.awt.headless=true",
         "-XX:+HeapDumpOnOutOfMemoryError",
         "-XX:HeapDumpPath=heap-dump.hprof",
         "-XX:ErrorFile=logs/hs_err_pid%p.log"

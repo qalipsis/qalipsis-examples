@@ -10,4 +10,4 @@ logging:
 report:
   export:
     console-live:
-      enabled: false
+      enabled: true

@@ -72,7 +72,6 @@ task<JavaExec>("runCampaign") {
         "-XX:InitiatingHeapOccupancyPercent=35",
         "-XX:+ExplicitGCInvokesConcurrent",
         "-XX:MaxInlineLevel=15",
-        "-Djava.awt.headless=true",
         "-XX:+HeapDumpOnOutOfMemoryError",
         "-XX:HeapDumpPath=heap-dump.hprof",
         "-XX:ErrorFile=logs/hs_err_pid%p.log"

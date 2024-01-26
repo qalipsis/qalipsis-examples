@@ -96,6 +96,7 @@ class DistributedSystemScenario(
                 }
                 monitoring {
                     events = true
+                    all()
                 }
                 request { _, _ ->
                     SimpleHttpRequest(method = HttpMethod.POST, uri = "/data").body(
@@ -121,6 +122,7 @@ class DistributedSystemScenario(
                 }
                 monitoring {
                     events = true
+                    all()
                 }
             }
             .verify { result ->
