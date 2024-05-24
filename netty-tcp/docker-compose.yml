@@ -1,0 +1,20 @@
+services:
+
+  echo-server:
+    image: krys/echo-server
+    restart: always
+    ports:
+      - "2701:8800"
+    healthcheck:
+      test: nc -z localhost 8800
+      interval: 5s
+      timeout: 2s
+      retries: 20
+      start_period: 10s
+
+  healthy_checker:
+    container_name: tcp_healthiness_checker
+    image: busybox
+    depends_on:
+      echo-server:
+        condition: service_healthy

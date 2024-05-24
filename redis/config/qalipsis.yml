@@ -2,7 +2,7 @@ campaign:
   name: redis-${random.shortuuid}
   configuration:
     validation:
-      max-execution-duration: PT2M
+      max-execution-duration: PT30S
 
 report:
   export:

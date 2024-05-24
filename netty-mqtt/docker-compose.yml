@@ -1,0 +1,21 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto
+    volumes:
+      - ./docker-config/:/mosquitto/config/:ro
+    ports:
+      - 11883:1883
+      - 19001:9001
+    healthcheck:
+      test: nc -z localhost 1883
+      interval: 5s
+      timeout: 2s
+      retries: 20
+      start_period: 10s
+
+  healthy_checker:
+    container_name: mqtt_healthiness_checker
+    image: busybox
+    depends_on:
+      mosquitto:
+        condition: service_healthy

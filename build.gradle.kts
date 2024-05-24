@@ -20,19 +20,11 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
 import org.gradle.api.tasks.testing.logging.TestLogEvent.STANDARD_ERROR
 
 plugins {
-    java
-    idea
-    kotlin("jvm") version "1.8.21"
-    kotlin("kapt") version "1.8.21"
-    kotlin("plugin.allopen") version "1.8.21"
+    id("io.qalipsis.bootstrap") version "0.1.1"
 
-    id("nebula.contacts") version "6.0.0"
-    id("nebula.info") version "11.4.1"
     id("nebula.maven-publish") version "18.4.0"
-    id("nebula.maven-scm") version "18.4.0"
-    id("nebula.maven-manifest") version "18.4.0"
-    signing
-    id("com.palantir.docker") version "0.28.0" apply false
+    id("com.palantir.docker") version "0.36.0" apply false
+    id("com.palantir.docker-compose") version "0.36.0" apply false
     id("com.github.jk1.dependency-license-report") version "1.17"
 }
 
@@ -66,27 +58,7 @@ allprojects {
     version = File(rootDir, "project.version").readText().trim()
 
     apply(plugin = "java")
-    apply(plugin = "nebula.contacts")
-    apply(plugin = "nebula.info")
     apply(plugin = "nebula.maven-publish")
-    apply(plugin = "nebula.maven-scm")
-    apply(plugin = "nebula.maven-manifest")
-    apply(plugin = "nebula.maven-developer")
-    apply(plugin = "nebula.javadoc-jar")
-    apply(plugin = "nebula.source-jar")
-    apply(plugin = "signing")
-
-    infoBroker {
-        excludedManifestProperties = listOf("Module-Owner", "Module-Email", "Module-Source")
-    }
-
-    contacts {
-        addPerson("eric.jesse@aeris-consulting.com", delegateClosureOf<nebula.plugin.contacts.Contact> {
-            moniker = "Eric Jessé"
-            github = "ericjesse"
-            role("Owner")
-        })
-    }
 
     repositories {
         mavenLocal()
@@ -102,12 +74,9 @@ allprojects {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
-    signing {
-        publishing.publications.forEach { sign(it) }
-    }
-
     val ossrhUsername: String? by project
     val ossrhPassword: String? by project
+
     publishing {
         publications {
             filterIsInstance<MavenPublication>().forEach {
@@ -131,21 +100,6 @@ allprojects {
     tasks {
         withType<Jar> {
             archiveBaseName.set("examples-${project.name}")
-        }
-
-        named<Test>("test") {
-            ignoreFailures = System.getProperty("ignoreUnitTestFailures", "false").toBoolean()
-            this.exclude("**/*IntegrationTest.*", "**/*IntegrationTest$*")
-        }
-
-        val integrationTest = register<Test>("integrationTest") {
-            this.group = "verification"
-            ignoreFailures = System.getProperty("ignoreIntegrationTestFailures", "false").toBoolean()
-            include("**/*IntegrationTest.*", "**/*IntegrationTest$*")
-        }
-
-        named<Task>("check") {
-            dependsOn(integrationTest.get())
         }
 
         if (!project.file("src/main/kotlin").isDirectory) {
@@ -186,9 +140,6 @@ allprojects {
 val testTasks = subprojects.flatMap {
     val testTasks = mutableListOf<Test>()
     (it.tasks.findByName("test") as Test?)?.apply {
-        testTasks.add(this)
-    }
-    (it.tasks.findByName("integrationTest") as Test?)?.apply {
         testTasks.add(this)
     }
     testTasks

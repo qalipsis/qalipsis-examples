@@ -1,4 +1,3 @@
-version: '3.9'
 services:
   cassandra:
     image: cassandra #https://hub.docker.com/_/cassandra
@@ -27,3 +26,10 @@ services:
     volumes:
       - ./schema.cql:/schema.cql
     command: /bin/bash -c "echo loading cassandra keyspace && cqlsh cassandra -f /schema.cql"
+
+  healthy_checker:
+    container_name: cassandra_healthiness_checker
+    image: busybox
+    depends_on:
+      cassandra-load-keyspace:
+        condition: service_completed_successfully

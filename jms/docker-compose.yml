@@ -1,11 +1,22 @@
-version: '3.9'
-
 services:
 
   jms:
-    image: rmohr/activemq:5.15.9
+    image: apache/activemq-classic
     restart: always
-    container_name: jms-server
+    container_name: activemq-classic
     ports:
       - "61616:61616"
       - "18161:8161"
+    healthcheck:
+      test: curl localhost:8161
+      interval: 5s
+      timeout: 2s
+      retries: 20
+      start_period: 10s
+
+  healthy_checker:
+    container_name: jms_healthiness_checker
+    image: busybox
+    depends_on:
+      jms:
+        condition: service_healthy

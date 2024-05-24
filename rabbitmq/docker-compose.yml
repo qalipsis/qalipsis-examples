@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -12,3 +11,16 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: qalipsis
       RABBITMQ_DEFAULT_PASS: qalipsis
+    healthcheck:
+      test: nc -z localhost 5672
+      interval: 5s
+      timeout: 2s
+      retries: 20
+      start_period: 10s
+
+  healthy_checker:
+    container_name: rabbitmq_healthiness_checker
+    image: busybox
+    depends_on:
+      rabbitmq:
+        condition: service_healthy

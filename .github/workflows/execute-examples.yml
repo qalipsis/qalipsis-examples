@@ -1,4 +1,4 @@
-name: Java CI - Work in progress
+name: Verification of examples
 
 on:
   workflow_dispatch:
@@ -8,6 +8,11 @@ on:
   pull_request:
     branches:
       - main
+#  schedule:
+#    - cron: '0 5 * * 7' # At 5:00 UTC on Sunday.
+
+env:
+  GITHUB_ACTIONS: true
 
 jobs:
   build:
@@ -15,8 +20,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: ['ubuntu-latest']
-        java: ['11']
+        os: [ 'ubuntu-latest' ]
+        java: [ '17' ]
 
     steps:
       - name: Checkout
@@ -27,66 +32,113 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
 
-      - name: Check licenses
-        run: ./gradlew checkLicense
+      - name: Validate Gradle wrapper
+        uses: gradle/wrapper-validation-action@v1.0.4
+
+      - name: Create demo service
         if: always()
+        uses: gradle/gradle-build-action@v3.3.2
+        with:
+          arguments: :demo-microservice:build :demo-microservice:dockerTag
 
-      - name: Compile
-        run: ./gradlew clean build
+      - name: Hello World
+        if: always()
+        uses: gradle/gradle-build-action@v3.3.2
+        with:
+          arguments: :hello-world:check
 
-      - name: Cassandra Save and poll
-        run: (docker-compose -f cassandra/docker-compose.yml up -d && sleep 10 && ./gradlew :cassandra:runCampaignForSaveAndPoll); docker-compose -f cassandra/docker-compose.yml down -v
+      - name: Apache Cassandra
+        if: always()
+        uses: gradle/gradle-build-action@v3.3.2
+        with:
+          arguments: :cassandra:check
 
-      - name: Cassandra Save and search
-        run: (docker-compose -f cassandra/docker-compose.yml up -d && sleep 10 && ./gradlew :cassandra:runCampaignForSaveAndSearch); docker-compose -f cassandra/docker-compose.yml down -v
+      - name: Elasticsearch
+        if: always()
+        uses: gradle/gradle-build-action@v3.3.2
+        with:
+          arguments: :elasticsearch:check
 
-      - name: Elasticsearch Save and poll
-        run: (docker-compose -f elasticsearch/docker-compose.yml up -d && sleep 10 && ./gradlew :elasticsearch:runCampaignForSaveAndPoll); docker-compose -f elasticsearch/docker-compose.yml down -v
+      - name: Graphite
+        if: always()
+        uses: gradle/gradle-build-action@v3.3.2
+        with:
+          arguments: :graphite:check
 
-      - name: Elasticsearch Save and search
-        run: (docker-compose -f elasticsearch/docker-compose.yml up -d && sleep 10 && ./gradlew :elasticsearch:runCampaignForSaveAndSearch); docker-compose -f elasticsearch/docker-compose.yml down -v
+      - name: InfluxDB
+        if: always()
+        uses: gradle/gradle-build-action@v3.3.2
+        with:
+          arguments: :influxdb:check
 
-      - name: Graphite Save and poll
-        run: (docker-compose -f graphite/docker-compose.yml up -d && sleep 75 && ./gradlew :graphite:runCampaignForSaveAndPoll); docker-compose -f graphite/docker-compose.yml down -v
+      # Failing on Github: ERROR: for healthy_checker  Container "abaf099899fa" is unhealthy
+      #- name: Jakarta EE Messaging
+      #  if: always()
+      #  uses: gradle/gradle-build-action@v3.3.2
+      #  with:
+      #    arguments: :jakarta-ee-messaging:check
 
-      - name: Influxdb Save and poll
-        run: (docker-compose -f influxdb/docker-compose.yml up -d && sleep 10 && ./gradlew :influxdb:runCampaignForSaveAndPoll); docker-compose -f influxdb/docker-compose.yml down -v
+      - name: Java Messaging Service
+        if: always()
+        uses: gradle/gradle-build-action@v3.3.2
+        with:
+          arguments: :jms:check
 
-      - name: Influxdb Save and search
-        run: (docker-compose -f influxdb/docker-compose.yml up -d && sleep 10 && ./gradlew :influxdb:runCampaignForSaveAndSearch); docker-compose -f influxdb/docker-compose.yml down -v
+      - name: Apache Kafka
+        if: always()
+        uses: gradle/gradle-build-action@v3.3.2
+        with:
+          arguments: :kafka:check
 
-      - name: Jakarta Produce and consume from queue
-        run: (docker-compose -f jakarta-ee-messaging/docker-compose.yml up -d && sleep 10 && ./gradlew :jakarta-ee-messaging:runCampaignForProduceAndConsumeFromQueue); docker-compose -f jakarta-ee-messaging/docker-compose.yml down -v
+      - name: MongoDB
+        if: always()
+        uses: gradle/gradle-build-action@v3.3.2
+        with:
+          arguments: :mongodb:check
 
-      - name: Jakarta Produce and consume from topic
-        run: (docker-compose -f jakarta-ee-messaging/docker-compose.yml up -d && sleep 10 && ./gradlew :jakarta-ee-messaging:runCampaignForProduceAndConsumeFromTopic); docker-compose -f jakarta-ee-messaging/docker-compose.yml down -v
+      - name: Netty - MQTT
+        if: always()
+        uses: gradle/gradle-build-action@v3.3.2
+        with:
+          arguments: :netty-mqtt:check
 
-      - name: Jms Produce and consume
-        run: (docker-compose -f jms/docker-compose.yml up -d && sleep 10 && ./gradlew :jms:runCampaignForProduceAndConsume); docker-compose -f jms/docker-compose.yml down -v
+      - name: Netty - TCP
+        if: always()
+        uses: gradle/gradle-build-action@v3.3.2
+        with:
+          arguments: :netty-tcp:check
 
-      - name: Kafka Produce and consume
-        run: (docker-compose -f kafka/docker-compose.yml up -d && sleep 10 && ./gradlew :kafka:runCampaignForProduceAndConsume); docker-compose -f kafka/docker-compose.yml down -v
+      - name: R2DBC Jasync
+        if: always()
+        uses: gradle/gradle-build-action@v3.3.2
+        with:
+          arguments: :r2dbc-jasync:check
 
-      - name: MongoDB Save and poll
-        run: (docker-compose -f mongodb/docker-compose.yml up -d && sleep 10 && ./gradlew :mongodb:runCampaignForSaveAndPoll); docker-compose -f mongodb/docker-compose.yml down -v
+      - name: RabbitMQ
+        if: always()
+        uses: gradle/gradle-build-action@v3.3.2
+        with:
+          arguments: :rabbitmq:check
 
-      - name: MongoDB Save and search
-        run: (docker-compose -f mongodb/docker-compose.yml up -d && sleep 10 && ./gradlew :mongodb:runCampaignForSaveAndSearch); docker-compose -f mongodb/docker-compose.yml down -v
+      - name: Redis
+        if: always()
+        uses: gradle/gradle-build-action@v3.3.2
+        with:
+          arguments: :redis:check
 
-      - name: MQTT Produce and consume
-        run: (docker-compose -f mqtt/docker-compose.yml up -d && sleep 10 && ./gradlew :mqtt:runCampaignForProduceAndConsume); docker-compose -f mqtt/docker-compose.yml down -v
+      - name: Netty - Quickstart HTTP
+        if: always()
+        uses: gradle/gradle-build-action@v3.3.2
+        with:
+          arguments: :quickstart-http:check
 
-      - name: RabbitMQ Produce and consume
-        run: (docker-compose -f rabbitmq/docker-compose.yml up -d && sleep 10 && ./gradlew :rabbitmq:runCampaignForProduceAndConsume); docker-compose -f rabbitmq/docker-compose.yml down -v
-
-      - name: Redis Produce and consume
-        run: (docker-compose -f redis/docker-compose.yml up -d && sleep 10 && ./gradlew :redis:runCampaignForProduceAndConsume); docker-compose -f redis/docker-compose.yml down -v
-
-      - name: Redis Save and poll
-        run: (docker-compose -f redis/docker-compose.yml up -d && sleep 10 && ./gradlew :redis:runCampaignForSaveAndPoll); docker-compose -f redis/docker-compose.yml down -v
-
-      - name: R2JDC-Jasync Save and poll
-        run: (docker-compose -f r2dbc-jasync/docker-compose.yml up -d && sleep 10 && ./gradlew :r2dbc-jasync:runCampaignForSaveAndPoll); docker-compose -f r2dbc-jasync/docker-compose.yml down -v
-
-      - name: R2JDC-Jasync Save and search
-        run: (docker-compose -f r2dbc-jasync/docker-compose.yml up -d && sleep 10 && ./gradlew :r2dbc-jasync:runCampaignForSaveAndSearch); docker-compose -f r2dbc-jasync/docker-compose.yml down -v
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v4
+        if: always()
+        with:
+          report_paths: '**/build/test-results/**/*.xml'
+          fail_on_failure: true
+          include_passed: true
+          annotations_limit: 0
+          summary: true
+          detailed_summary: true

@@ -1,11 +1,28 @@
-version: "3.9"
 services:
   elasticsearch:
-    container_name: es-container
+    container_name: elasticsearch
     image: docker.elastic.co/elasticsearch/elasticsearch:8.4.1
     restart: always
     environment:
-      - xpack.security.enabled=false
+      - "xpack.security.enabled=false"
       - "discovery.type=single-node"
+      - "cluster.routing.allocation.disk.watermark.low=3GB"
+      - "cluster.routing.allocation.disk.watermark.high=2GB"
+      - "cluster.routing.allocation.disk.watermark.flood_stage=1GB"
+      - "cluster.routing.allocation.disk.watermark.flood_stage.frozen=99%"
+      - "cluster.routing.allocation.disk.watermark.flood_stage.frozen.max_headroom=500MB"
     ports:
       - "9200:9200"
+    healthcheck:
+      test: nc -z localhost 9200
+      interval: 5s
+      timeout: 2s
+      retries: 20
+      start_period: 10s
+
+  healthy_checker:
+    container_name: elasticsearch_healthiness_checker
+    image: busybox
+    depends_on:
+      elasticsearch:
+        condition: service_healthy

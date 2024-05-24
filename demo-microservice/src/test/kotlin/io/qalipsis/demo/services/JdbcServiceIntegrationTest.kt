@@ -22,14 +22,14 @@ import java.sql.Connection
 import kotlin.math.pow
 
 /**
- * Elasticsearch service integration tests.
+ * J2DBC service integration tests.
  *
- * This class provides integration tests for elasticsearch service.
+ * This class provides integration tests for J2DBC service.
  *
  * @author Alexander Sosnovsky
  */
 @Testcontainers
-@MicronautTest
+@MicronautTest(startApplication = false)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class JdbcServiceIntegrationTest : TestPropertyProvider {
 

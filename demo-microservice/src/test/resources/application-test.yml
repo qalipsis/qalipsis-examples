@@ -2,3 +2,7 @@ micronaut:
   http:
     client:
       follow-redirects: false
+  server:
+    port: ${random.port}
+    ssl:
+      enabled: false

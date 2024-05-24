@@ -1,7 +1,6 @@
-version: '3.5'
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.12.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.21
     restart: always
     environment:
       - ES_JAVA_OPTS=-Xms256m -Xmx256m
@@ -11,9 +10,15 @@ services:
       - elasticsearch-volume:/usr/share/elasticsearch/data
     ports:
       - "9200:9200"
+    healthcheck:
+      test: nc -z localhost 9200
+      interval: 5s
+      timeout: 2s
+      retries: 20
+      start_period: 10s
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:7.12.0
+    image: docker.elastic.co/kibana/kibana:7.17.21
     restart: always
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
@@ -21,38 +26,92 @@ services:
       - "5601:5601"
     depends_on:
       - elasticsearch
+    healthcheck:
+      test: curl http://localhost:5601
+      interval: 5s
+      timeout: 2s
+      retries: 20
+      start_period: 10s
 
   redis:
-    image: redis:6
-    restart: always
+    image: redis
     ports:
-      - "6379:6379"
-    volumes:
-      - ./test/resources/redis-v6.conf:/usr/local/etc/redis/redis.conf
+      - '6379:6379'
+    healthcheck:
+      test: redis-cli --scan --pattern '*' --count 1
+      interval: 5s
+      timeout: 2s
+      retries: 20
+      start_period: 10s
 
-  zookeeper:
-    image: wurstmeister/zookeeper
-
-  kafka:
-    image: wurstmeister/kafka
+  redpanda:
+    command:
+      - redpanda
+      - start
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      # Address the broker advertises to clients that connect to the Kafka API.
+      # Use the internal addresses to connect to the Redpanda brokers'
+      # from inside the same Docker network.
+      # Use the external addresses to connect to the Redpanda brokers'
+      # from outside the Docker network.
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+      - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+      # Address the broker advertises to clients that connect to the HTTP Proxy.
+      - --advertise-pandaproxy-addr internal://redpanda:8082,external://localhost:18082
+      - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+      # Redpanda brokers use the RPC API to communicate with each other internally.
+      - --rpc-addr redpanda:33145
+      - --advertise-rpc-addr redpanda:33145
+      # Mode dev-container uses well-known configuration properties for development in containers.
+      - --mode dev-container
+      # Tells Seastar (the framework Redpanda uses under the hood) to use 1 core on the system.
+      - --smp 1
+      - --default-log-level=info
+    image: docker.redpanda.com/redpandadata/redpanda:v24.1.3
+    container_name: redpanda
     ports:
-      - "9092:9092"
-      - "9093:9093"
+      - 18081:18081
+      - 18082:18082
+      - 19092:19092
+      - 19644:9644
+    healthcheck:
+      test: curl http://localhost:9644
+      interval: 5s
+      timeout: 2s
+      retries: 20
+      start_period: 10s
+  console:
+    container_name: redpanda-console
+    image: docker.redpanda.com/redpandadata/console:v2.5.2
+    entrypoint: /bin/sh
+    command: -c 'echo "$$CONSOLE_CONFIG_FILE" > /tmp/config.yml; /app/console'
     environment:
-      KAFKA_BROKER_ID: 0
-      KAFKA_LISTENERS: LOCAL://0.0.0.0:9093,PLAINTEXT://0.0.0.0:9092
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
-      KAFKA_ADVERTISED_LISTENERS: LOCAL://localhost:9093,PLAINTEXT://kafka:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,LOCAL:PLAINTEXT
-      KAFKA_AUTO_CREATE_TOPICS: 'true'
-      KAFKA_CREATE_TOPICS: "http-request:1:1"
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181/kafka
+      CONFIG_FILEPATH: /tmp/config.yml
+      CONSOLE_CONFIG_FILE: |
+        kafka:
+          brokers: ["redpanda:9092"]
+          schemaRegistry:
+            enabled: true
+            urls: ["http://redpanda:8081"]
+        redpanda:
+          adminApi:
+            enabled: true
+            urls: ["http://redpanda:9644"]
+    ports:
+      - 28080:8080
+    healthcheck:
+      test: curl http://localhost:8080
+      interval: 5s
+      timeout: 2s
+      retries: 20
+      start_period: 10s
     depends_on:
-      - zookeeper
+      - redpanda
 
   timescale:
-    image: timescale/timescaledb:latest-pg14
+    image: timescale/timescaledb:latest-pg16
     restart: always
+    platform: linux/amd64
     environment:
       POSTGRES_USER: qalipsis_demo
       POSTGRES_PASSWORD: qalipsis
@@ -64,33 +123,56 @@ services:
 
   http-to-kafka:
     image: aerisconsulting/http-to-kafka
+    platform: linux/amd64
     command:
       - "--https=true"
       - "--ssl-key=http-server.key"
       - "--ssl-cert=http-server.crt"
-      - "--kafka-bootstrap=kafka:9092"
+      - "--kafka-bootstrap=redpanda:9092"
       - "--kafka-topic=http-request"
     ports:
       - "18080:8080"
       - "18443:8443"
     depends_on:
-      - kafka
+      - redpanda
 
-  service-kafka:
-    image: aerisconsulting/qalipsis-demo-microservice
+  kafka-to-db:
+    image: aerisconsulting/qalipsis-demo-microservice:0.1.0
+    platform: linux/amd64
     environment:
       - KAFKA_ENABLED=true
       - MESSAGING_KAFKA_LISTENER_ENABLED=true
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
       - REDIS_URI=redis://redis:6379
       - DATASOURCES_DEFAULT_URL=jdbc:postgresql://timescale:5432/qalipsis
       - DATASOURCES_DEFAULT_USERNAME=qalipsis_demo
       - DATASOURCES_DEFAULT_PASSWORD=qalipsis
       - LIQUIBASE_ENABLED=true
+    healthcheck:
+      test: curl http://localhost:8080 | grep Welcome
+      interval: 5s
+      timeout: 2s
+      retries: 20
+      start_period: 10s
     depends_on:
       - redis
-      - kafka
+      - redpanda
       - timescale
+
+  healthy_checker:
+    container_name: distributed_healthiness_checker
+    image: busybox
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      kibana:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+      console:
+        condition: service_healthy
 
 volumes:
   elasticsearch-volume:
