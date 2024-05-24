@@ -73,7 +73,6 @@ class JmsProduceAndConsume {
             .map { it.value } // we transform the output of the CSV reader entries to utils.BatteryState
             .jms()
             .produce {
-
                 connect {
                     ActiveMQConnectionFactory("tcp://localhost:61616").createConnection()
                 }

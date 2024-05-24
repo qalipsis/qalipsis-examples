@@ -23,12 +23,12 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import io.netty.handler.codec.http.HttpHeaderValues
 import io.netty.handler.codec.http.HttpMethod
 import io.netty.handler.codec.http.HttpResponseStatus
-import io.netty.handler.codec.http.cookie.Cookie
 import io.qalipsis.api.annotations.Property
 import io.qalipsis.api.annotations.Scenario
 import io.qalipsis.api.context.StepContext
 import io.qalipsis.api.events.EventsLogger
 import io.qalipsis.api.executionprofile.regular
+import io.qalipsis.api.executionprofile.stages
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.*
 import io.qalipsis.api.steps.datasource.DatasourceRecord
@@ -37,11 +37,9 @@ import io.qalipsis.plugins.kafka.consumer.consume
 import io.qalipsis.plugins.kafka.kafka
 import io.qalipsis.plugins.kafka.serdes.jsonSerde
 import io.qalipsis.plugins.netty.RequestResult
-import io.qalipsis.plugins.netty.http.request.SimpleHttpRequest
 import io.qalipsis.plugins.netty.http.response.HttpResponse
 import io.qalipsis.plugins.netty.http.spec.HttpVersion
 import io.qalipsis.plugins.netty.http.spec.http
-import io.qalipsis.plugins.netty.http.spec.httpWith
 import io.qalipsis.plugins.netty.netty
 import io.qalipsis.plugins.r2dbc.jasync.dialect.Protocol
 import io.qalipsis.plugins.r2dbc.jasync.poll.poll
@@ -79,12 +77,24 @@ class DistributedSystemScenario(
             minionsCount = 100
             profile {
                 regular(periodMs = 500, minionsCountProLaunch = 50)
+                stages {
+                    stage(10, 1000, 5000, 25)
+                    stage(50, 1000, 60000, 25)
+                }
             }
         }
             .start()
-            .netty()
-            .http {
-                name = "http-data-push-without-login"
+            .returns { ctx ->
+                DeviceState(
+                    deviceId = ctx.minionId,
+                    timestamp = System.currentTimeMillis(),
+                    positionLat = randomLatitude(),
+                    positionLon = randomLongitude(),
+                    batteryLevelPercentage = (Math.random() * 100).toInt()
+                )
+            }
+            .netty().http {
+                name = "http-data-push"
                 connect {
                     url(url = serverUrl)
                     connectTimeout = Duration.ofMillis(2000)
@@ -97,58 +107,29 @@ class DistributedSystemScenario(
                 monitoring {
                     events = true
                 }
-                request { _, _ ->
-                    SimpleHttpRequest(method = HttpMethod.POST, uri = "/data").body(
-                        "Nothing received here",
-                        HttpHeaderValues.TEXT_PLAIN
-                    )
-                }
-            }
-            .verify { result ->
-                assertThat(actual = result.response!!.status).isEqualTo(expected = HttpResponseStatus.UNAUTHORIZED)
-            }.configure {
-                name = "Verify the data push without login"
-            }
-            .netty()
-            .httpWith("http-data-push-without-login") {
-                name = "http-login"
-                request { _, _ ->
-                    SimpleHttpRequest(HttpMethod.POST, "/login")
+                request { ctx, deviceState ->
+                    simple(HttpMethod.POST, "/data")
                         .body(
-                            body = """{ "username": "test", "password": "test" }""",
+                            body = objectMapper.writeValueAsBytes(deviceState),
                             contentType = HttpHeaderValues.APPLICATION_JSON
                         )
-                }
-                monitoring {
-                    events = true
+                        .addHeader(name = "message-key", value = ctx.minionId)
                 }
             }
             .verify { result ->
-                assertThat(actual = result).all {
+                assertThat(result).all {
                     prop(RequestResult<*, HttpResponse<String>, *>::response).isNotNull().all {
-                        prop(HttpResponse<*>::status).isEqualTo(HttpResponseStatus.SEE_OTHER)
-                        prop(HttpResponse<*>::headers).key("location").isEqualTo("/")
-                        prop(HttpResponse<*>::cookies).all {
-                            hasSize(1)
-                            key("aeris-http-to-kafka-session")
-                        }
+                        prop(HttpResponse<*>::status).isEqualTo(HttpResponseStatus.ACCEPTED)
                     }
                     prop(RequestResult<*, HttpResponse<String>, *>::meters).all {
-                        prop(RequestResult.Meters::timeToLastByte).isNotNull().isLessThan(Duration.ofMillis(100))
+                        prop(RequestResult.Meters::timeToLastByte).isNotNull()
+                            .isLessThan(Duration.ofMillis(300))
                     }
                 }
             }.configure {
-                name = "Verify login"
+                name = "Verify data push"
             }
-            .map { result ->
-                DeviceState(
-                    positionLat = randomLatitude(), positionLon = randomLongitude(),
-                    batteryLevelPercentage = (Math.random() * 100).toInt()
-                ) to result.response!!.cookies["aeris-http-to-kafka-session"]!!
-            }
-            .pushDataAndVerify(objectMapper)
-            .map { it.input.first } // Only keep the device state as input for the next steps.
-
+            .map { it.input } // Only keep the device state as input for the next steps.
             .split {
                 // Verify the data in Kafka and Elasticsearch in parallel, in order to avoid that
                 // an error occurring on one prevents the other verification from running.
@@ -161,44 +142,11 @@ class DistributedSystemScenario(
 
     private fun randomLatitude() = Math.random() * 180 - 90
 
-    private fun StepSpecification<*, Pair<DeviceState, Cookie>, *>.pushDataAndVerify(
-        objectMapper: ObjectMapper
-    ) = netty()
-        .httpWith("http-data-push-without-login") {
-            name = "http-push-device-state"
-            request { ctx, (deviceState, cookie) ->
-                deviceState.deviceId = ctx.minionId
-                deviceState.timestamp = System.currentTimeMillis()
-                SimpleHttpRequest(HttpMethod.POST, "/data")
-                    .body(
-                        body = objectMapper.writeValueAsBytes(deviceState),
-                        contentType = HttpHeaderValues.APPLICATION_JSON
-                    )
-                    .addHeader(name = "message-key", value = ctx.minionId)
-                    .addCookies(cookie)
-            }
-            monitoring {
-                events = true
-            }
-        }
-        .verify { result ->
-            assertThat(result).all {
-                prop(RequestResult<*, HttpResponse<String>, *>::response).isNotNull().all {
-                    prop(HttpResponse<*>::status).isEqualTo(HttpResponseStatus.ACCEPTED)
-                }
-                prop(RequestResult<*, HttpResponse<String>, *>::meters).all {
-                    prop(RequestResult.Meters::timeToLastByte).isNotNull()
-                        .isLessThan(Duration.ofMillis(300))
-                }
-            }
-        }.configure {
-            name = "Verify data push"
-        }
 
     /**
      * Verifies the correctness of the data in Elasticsearch and the latency.
      */
-    private fun StepSpecification<RequestResult<Pair<DeviceState, Cookie>, HttpResponse<String>, *>, DeviceState, *>.verifyJdbc() {
+    private fun StepSpecification<*, DeviceState, *>.verifyJdbc() {
         innerJoin(
             using = { deviceState -> deviceState.value.deviceId },
             on = {
@@ -246,7 +194,9 @@ class DistributedSystemScenario(
                     key("message_key").isEqualTo(deviceState.deviceId)
                 }
                 // The device state should be received by saved into Timescale in the next 10 seconds after its push to the HTTP server.
-                assertThat(actual = (dbRecord.value["saving_timestamp"] as Long) - deviceState.timestamp).isLessThan(10000)
+                assertThat(actual = (dbRecord.value["saving_timestamp"] as Long) - deviceState.timestamp).isLessThan(
+                    10000
+                )
             }.configure {
                 name = "Verify Timescale data"
             }
@@ -255,7 +205,7 @@ class DistributedSystemScenario(
     /**
      * Verifies the correctness of the data in Kafka and the latency.
      */
-    private fun StepSpecification<RequestResult<Pair<DeviceState, Cookie>, HttpResponse<String>, *>, DeviceState, *>.verifyKafka(
+    private fun StepSpecification<*, DeviceState, *>.verifyKafka(
         kafkaBootstrap: String
     ) {
         innerJoin(
@@ -312,12 +262,12 @@ class DistributedSystemScenario(
      * State of the device sent vio HTTP to the server.
      */
     data class DeviceState(
+        val deviceId: String,
+        val timestamp: Long = 0,
         val positionLat: Double,
         val positionLon: Double,
         val batteryLevelPercentage: Int
     ) {
-        lateinit var deviceId: String
-        var timestamp: Long = 0
     }
 
 }

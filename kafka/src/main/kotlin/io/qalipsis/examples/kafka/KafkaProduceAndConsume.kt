@@ -71,7 +71,7 @@ class KafkaProduceAndConsume {
                 keySerializer = Serdes.String().serializer(),
                 valueSerializer = Serdes.String().serializer()
             ) {
-                bootstrap("localhost:9092")
+                bootstrap("localhost:19092")
                 clientName("producer")
                 records { _, input ->
                     listOf(
@@ -90,7 +90,7 @@ class KafkaProduceAndConsume {
                 },
                 on = {
                     it.kafka().consume {
-                        bootstrap("localhost:9092")
+                        bootstrap("localhost:19092")
                         topics("battery_state") // Define which topic we want to listen
                         groupId("kafka-example")
                         offsetReset(OffsetResetStrategy.EARLIEST) // where we want to start consume. EARLIEST starts consuming messages from the beginning of the queue

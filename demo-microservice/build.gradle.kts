@@ -1,13 +1,20 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    application
     kotlin("jvm")
     kotlin("kapt")
-    kotlin("plugin.allopen")
-    id("com.github.johnrengelman.shadow") version "7.1.1"
+    kotlin("plugin.allopen") version "1.8.21"
+
+    id("io.micronaut.minimal.application") version "3.6.2"
+    id("io.micronaut.graalvm") version "3.6.2"
+    id("io.micronaut.aot") version "3.6.2"
+    id("io.micronaut.test-resources") version "3.5.3"
+
     id("com.palantir.docker")
+    `maven-publish`
 }
+
+version = "0.1.0"
 
 allOpen {
     annotations(
@@ -21,36 +28,25 @@ allOpen {
 // Configure both compileKotlin and compileTestKotlin.
 tasks.withType<KotlinCompile>().configureEach {
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.majorVersion
+        jvmTarget = JavaVersion.VERSION_17.majorVersion
         javaParameters = true
     }
 }
 
 val kotlinVersion: String by project
-val micronautVersion: String by project
 val postgresqlDriverVersion = "42.3.1"
 
-kapt {
-    includeCompileClasspath = true
-}
-
 dependencies {
-    implementation(platform("io.qalipsis:qalipsis-platform:0.7.c-SNAPSHOT"))
-    kapt(platform("io.qalipsis:qalipsis-platform:0.7.c-SNAPSHOT"))
-    kapt("io.qalipsis:qalipsis-api-processors")
+    compileOnly("org.graalvm.nativeimage:svm")
 
-    implementation(kotlin("stdlib"))
-
-    kapt(platform("io.micronaut:micronaut-bom:$micronautVersion"))
     kapt("io.micronaut.security:micronaut-security-annotations")
     kapt("io.micronaut:micronaut-inject-java")
-    kapt("io.micronaut.data:micronaut-data-processor:${micronautVersion}")
+    kapt("io.micronaut.data:micronaut-data-processor")
+    kapt("io.micronaut:micronaut-http-validation")
 
-    implementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
     implementation("io.micronaut:micronaut-runtime")
     implementation("io.micronaut.kotlin:micronaut-kotlin-runtime")
     implementation("io.micronaut.kotlin:micronaut-kotlin-extension-functions")
-    implementation("io.micronaut:micronaut-http-server-netty")
     implementation("io.micronaut.beanvalidation:micronaut-hibernate-validator")
     implementation("io.micronaut.kotlin:micronaut-kotlin-runtime")
     implementation("io.micronaut.security:micronaut-security-session")
@@ -67,33 +63,104 @@ dependencies {
     implementation("io.micronaut.sql:micronaut-jdbc-hikari")
     implementation("org.postgresql:postgresql:$postgresqlDriverVersion")
     implementation("io.micronaut.liquibase:micronaut-liquibase")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("io.github.microutils:kotlin-logging:2.1.23")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
     runtimeOnly("ch.qos.logback:logback-classic")
-    runtimeOnly("com.fasterxml.jackson.module:jackson-module-kotlin")
-    runtimeOnly("io.netty:netty-tcnative:2.0.29.Final")
-    runtimeOnly("io.netty:netty-tcnative-boringssl-static:2.0.29.Final")
-    runtimeOnly("io.netty:netty-tcnative-boringssl-static:2.0.40.Final:linux-x86_64")
-    runtimeOnly("io.netty:netty-tcnative-boringssl-static:2.0.40.Final:osx-x86_64")
+    runtimeOnly("org.fusesource.jansi:jansi:2.4.1")
 
-    kaptTest("io.micronaut:micronaut-inject-java")
-
-    testImplementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
     testImplementation("io.micronaut.rxjava3:micronaut-rxjava3-http-client")
     testImplementation("io.mockk:mockk:1.11.0")
-    testImplementation("org.junit.jupiter:junit-jupiter-api")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+    testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("com.willowtreeapps.assertk:assertk:0.+")
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("io.micronaut.test:micronaut-test-junit5")
-    testImplementation("org.testcontainers:kafka:1.+")
-    testImplementation("org.testcontainers:rabbitmq:1.+")
-    testImplementation("org.testcontainers:postgresql:1.+")
-    testImplementation("org.testcontainers:junit-jupiter:1.+") {
-        exclude("junit", "junit")
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.testcontainers:kafka")
+    testImplementation("org.testcontainers:rabbitmq")
+    testImplementation("org.testcontainers:testcontainers")
+
+    configurations.all {
+        resolutionStrategy {
+            force("ch.qos.logback:logback-classic:1.4.8")
+            force("ch.qos.logback:logback-core:1.4.8")
+        }
     }
+}
+
+application {
+    mainClass.set("io.qalipsis.demo.QalipsisDemoMicroserviceKt")
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+}
+
+graalvmNative.toolchainDetection.set(false)
+micronaut {
+    runtime("netty")
+    testRuntime("junit5")
+    processing {
+        incremental(true)
+        annotations("io.qalipsis.*")
+    }
+    aot {
+        // Please review carefully the optimizations enabled below
+        // Check https://micronaut-projects.github.io/micronaut-aot/latest/guide/ for more details
+        optimizeServiceLoading.set(true)
+        convertYamlToJava.set(true)
+        precomputeOperations.set(true)
+        cacheEnvironment.set(true)
+        optimizeClassLoading.set(true)
+        deduceEnvironment.set(true)
+        optimizeNetty.set(true)
+    }
+    testResources {
+        sharedServer.set(true)
+    }
+}
+
+tasks {
+    withType<KotlinCompile> {
+        kotlinOptions {
+            jvmTarget = JavaVersion.VERSION_17.majorVersion
+        }
+    }
+
+    test {
+        // JDK 16 enforces strong encapsulation of standard modules. In practice this mean overriding accessibility
+        // modifiers in JDK classes (for example, privateMember.setAccessible(true)) is forbidden.
+        // To allow mocking of the relevant classes, additional arguments are required.
+        jvmArgs(
+            "--add-opens", "java.base/java.time=ALL-UNNAMED",
+            "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED"
+        )
+    }
+
+    withType<Jar> {
+        isZip64 = true
+    }
+
+    val collectJars = create("collectJars") {
+        group = "build"
+
+        doLast {
+            val target = project.layout.buildDirectory.dir("classpath/libs").get().asFile
+            if (!target.isDirectory) {
+                target.deleteRecursively()
+            }
+            project.mkdir(target)
+            configurations.runtimeClasspath.get().filter { it.name.endsWith("jar") }.forEach {
+                it.copyTo(File(target, it.name), true)
+            }
+        }
+    }
+
+    named("dockerPrepare").configure {
+        dependsOn(collectJars)
+    }
+
 }
 
 application {
@@ -103,7 +170,7 @@ application {
     this.ext["workingDir"] = projectDir
 }
 
-task<JavaExec>("runHttpKafkaServer") {
+task<JavaExec>("runHttpToKafkaServer") {
     group = "application"
     description = "Starts the microservice as a HTTP Server that pushes data to Kafka"
     mainClass.set("io.qalipsis.demo.QalipsisDemoMicroserviceKt")
@@ -120,7 +187,7 @@ task<JavaExec>("runHttpKafkaServer") {
     workingDir = projectDir
 }
 
-task<JavaExec>("runKafkaListenerServer") {
+task<JavaExec>("runKafkaToDbServer") {
     group = "application"
     description = "Starts the microservice as a Kafka listener to save data into Timescale"
     mainClass.set("io.qalipsis.demo.QalipsisDemoMicroserviceKt")
@@ -141,34 +208,25 @@ task<JavaExec>("runKafkaListenerServer") {
     workingDir = projectDir
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_11
-}
-
-tasks {
-    withType<KotlinCompile>().configureEach {
-        kotlinOptions {
-            jvmTarget = JavaVersion.VERSION_11.majorVersion
-            javaParameters = true
-        }
-    }
-
-    named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
-        mergeServiceFiles()
-        archiveClassifier.set("qalipsis")
-    }
-
-    build {
-        dependsOn(shadowJar)
-    }
-}
-
-val shadowJarName = "examples-${project.name}-${project.version}-qalipsis.jar"
+val dockerImage = "aerisconsulting/qalipsis-demo-microservice"
 docker {
-    name = "aerisconsulting/qalipsis-demo-microservice"
-    setDockerfile(project.file("src/docker/Dockerfile"))
+    name = dockerImage
+
+    setDockerfile(project.layout.projectDirectory.file("src/main/docker/Dockerfile").asFile)
+
+    val jarFile = tasks.getByName<org.gradle.jvm.tasks.Jar>("jar").archiveFile.get().asFile
+    files(
+        project.layout.projectDirectory.dir("src/main/docker/resources"),
+        project.layout.buildDirectory.dir("classpath"),
+        project.layout.buildDirectory.file("libs/${jarFile.name}")
+    )
+    buildx(true)
+    if (System.getenv("GITHUB_ACTIONS") != "true") {
+        // On Github, the multiplatform build throws the error "docker exporter does not currently support exporting manifest lists".
+        platform("linux/amd64", "linux/arm64")
+    }
+
+    buildArgs(mapOf("JAR_NAME" to jarFile.name, "START_CLASS" to application.mainClass.get()))
+    noCache(false)
     pull(true)
-    noCache(true)
-    files("build/libs/$shadowJarName", "src/docker/entrypoint.sh")
-    buildArgs(mapOf("JAR_NAME" to shadowJarName))
 }

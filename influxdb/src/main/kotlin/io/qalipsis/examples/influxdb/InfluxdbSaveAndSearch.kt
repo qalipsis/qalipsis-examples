@@ -60,7 +60,7 @@ class InfluxdbSaveAndSearch {
             .save {
                 connect {
                     server(
-                        url = "http://localhost:18086",
+                        url = "http://localhost:18087",
                         bucket = "iot",
                         org = "qalipsis"
                     )
@@ -74,7 +74,7 @@ class InfluxdbSaveAndSearch {
 
                     points = { _, input ->
                         listOf(
-                            Point.measurement("battery_state")
+                            Point.measurement("searchable_battery_state")
                                 .addField("battery_level", input.batteryLevel)
                                 .addTag("device_id", input.deviceId)
                                 .addTag("timestamp", input.timestamp.epochSecond.toString())
@@ -91,7 +91,7 @@ class InfluxdbSaveAndSearch {
 
                 connect {
                     server(
-                        url = "http://localhost:18086",
+                        url = "http://localhost:18087",
                         bucket = "iot",
                         org = "qalipsis"
                     )
@@ -103,7 +103,7 @@ class InfluxdbSaveAndSearch {
                         from(bucket: "iot")
                                 |> range(start: -15m)
                                 |> filter(
-                                    fn: (r) => r._measurement == "battery_state" and
+                                    fn: (r) => r._measurement == "searchable_battery_state" and
                                         r.device_id == "${input.deviceId}" and
                                         r.timestamp == "${input.timestamp.epochSecond}"
                                     )               

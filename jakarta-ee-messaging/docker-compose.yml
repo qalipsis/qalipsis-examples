@@ -1,14 +1,27 @@
-version: '3.9'
-
 services:
 
   jakarta:
-    image: vromero/activemq-artemis
+    image: apache/activemq-artemis
     restart: always
-    container_name: ActiveMQ-Artemis-server
+    container_name: activemq-artemis
     ports:
       - "61616:61616"
       - "18161:8161"
     environment:
-      ARTEMIS_USERNAME: "qalipsis_user"
+      ARTEMIS_USER: "qalipsis_user"
       ARTEMIS_PASSWORD: "qalipsis_password"
+    volumes:
+      - ./docker-config/broker.xml:/var/lib/artemis-instance/etc/broker.xml:ro
+    healthcheck:
+      test: curl localhost:8161
+      interval: 5s
+      timeout: 2s
+      retries: 40
+      start_period: 10s
+
+  healthy_checker:
+    container_name: jakarta_healthiness_checker
+    image: busybox
+    depends_on:
+      jakarta:
+        condition: service_healthy

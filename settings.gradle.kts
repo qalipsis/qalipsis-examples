@@ -17,11 +17,10 @@
 rootProject.name = "qalipsis-examples"
 
 include(
-    "simple",
+    "hello-world",
     "cassandra",
-    "tcp-echo",
-    //"demo-microservice",
-    "quickstart1-http",
+    "demo-microservice",
+    "quickstart-http",
     "distributed-system",
     "cassandra",
     "elasticsearch",
@@ -32,7 +31,8 @@ include(
     "redis",
     "rabbitmq",
     "jms",
-    "mqtt",
+    "netty-mqtt",
+    "netty-tcp",
     "jakarta-ee-messaging",
     "graphite"
 )

@@ -15,69 +15,66 @@
  */
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransformer
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import io.qalipsis.gradle.bootstrap.tasks.RunQalipsis
 
 plugins {
-    application
-    kotlin("jvm")
-    kotlin("kapt")
+    id("io.qalipsis.bootstrap")
     id("com.github.johnrengelman.shadow") version "7.1.1"
-    id("com.palantir.docker")
+    id("com.palantir.docker-compose")
 }
 
-description = "Qalipsis Demo of a distributed system"
+description = "Demo how to test a distributed system"
 
-// Configure both compileKotlin and compileTestKotlin.
-tasks.withType<KotlinCompile>().configureEach {
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.majorVersion
-        javaParameters = true
+qalipsis {
+    plugins {
+        apacheKafka()
+        elasticsearch()
+        netty()
+        r2dbcJasync()
     }
 }
 
-val assertkVersion: String by project
-
-kapt {
-    includeCompileClasspath = true
-}
-
 dependencies {
-    implementation(platform("io.qalipsis:qalipsis-platform:0.7.c-SNAPSHOT"))
-    kapt(platform("io.qalipsis:qalipsis-platform:0.7.c-SNAPSHOT"))
-    kapt("io.qalipsis:qalipsis-api-processors")
-
-    implementation("io.qalipsis.plugin:qalipsis-plugin-netty")
-    implementation("io.qalipsis.plugin:qalipsis-plugin-kafka")
-    implementation("io.qalipsis.plugin:qalipsis-plugin-elasticsearch")
-    implementation("io.qalipsis.plugin:qalipsis-plugin-r2dbc-jasync")
-
-    implementation("com.willowtreeapps.assertk:assertk:$assertkVersion")
+    implementation("com.willowtreeapps.assertk:assertk-jvm:0.23")
 }
 
-task<JavaExec>("runCampaign") {
-    group = "application"
-    description = "Start a campaign with all the scenarios"
-    mainClass.set("io.qalipsis.runtime.Qalipsis")
-    maxHeapSize = "2G"
-    jvmArgs = listOf(
-        "-Xms2G",
-        "-XX:-MaxFDLimit",
-        "-server",
-        "-Dio.netty.leakDetectionLevel=advanced",
-        "-XX:+UseG1GC",
-        "-XX:MaxGCPauseMillis=20",
-        "-XX:InitiatingHeapOccupancyPercent=35",
-        "-XX:+ExplicitGCInvokesConcurrent",
-        "-XX:MaxInlineLevel=15",
-        "-Djava.awt.headless=true",
-        "-XX:+HeapDumpOnOutOfMemoryError",
-        "-XX:HeapDumpPath=heap-dump.hprof",
-        "-XX:ErrorFile=logs/hs_err_pid%p.log"
-    )
-    args("--autostart", "-c", "report.export.console.enabled=true")
-    workingDir = projectDir
-    classpath = sourceSets["main"].runtimeClasspath
+tasks {
+    create("runDistributedSystemDemo", RunQalipsis::class.java) {
+        scenarios("distributed-system")
+        jvmArgs(
+            "-Xms2G",
+            "-XX:-MaxFDLimit",
+            "-server",
+            "-Dio.netty.leakDetectionLevel=advanced",
+            "-XX:+UseG1GC",
+            "-XX:MaxGCPauseMillis=20",
+            "-XX:InitiatingHeapOccupancyPercent=35",
+            "-XX:+ExplicitGCInvokesConcurrent",
+            "-XX:MaxInlineLevel=15",
+            "-Djava.awt.headless=true",
+            "-XX:+HeapDumpOnOutOfMemoryError",
+            "-XX:HeapDumpPath=heap-dump.hprof",
+            "-XX:ErrorFile=logs/hs_err_pid%p.log"
+        )
+        maxHeapSize = "2G"
+
+        configuration(
+            "report.export.console.enabled" to "true",
+            "report.export.junit.enabled" to "true",
+            "report.export.junit.folder" to project.layout.buildDirectory.dir("test-results").get().asFile.path
+        )
+    }
+
+    named("check") {
+        dependsOn("runDistributedSystemDemo")
+    }
+}
+
+/** Beginning of the configuration for the shadow plugin. **/
+tasks {
+    withType<ShadowJar> {
+        isZip64 = true
+    }
 }
 
 application {
@@ -85,25 +82,16 @@ application {
     this.ext["workingDir"] = projectDir
 }
 
-tasks {
-    named<ShadowJar>("shadowJar") {
-        mergeServiceFiles()
-        transform(ServiceFileTransformer().also { it.setPath("META-INF/qalipsis/**") })
-        archiveClassifier.set("qalipsis")
-    }
-
-    build {
-        dependsOn(shadowJar)
-    }
-}
-
 val shadowJarName = "examples-${project.name}-${project.version}-qalipsis.jar"
+/** End of the configuration for the shadow plugin. **/
 
-docker {
-    name = "aerisconsulting/qalipsis-demo-distributed-system"
-    setDockerfile(project.file("src/docker/Dockerfile"))
-    pull(true)
-    noCache(true)
-    files("build/libs/$shadowJarName", "src/docker/entrypoint.sh")
-    buildArgs(mapOf("JAR_NAME" to shadowJarName))
+/** Start of the configuration to set up the testing environment **/
+tasks {
+    withType<RunQalipsis> {
+        dependsOn("dockerComposeUp")
+    }
+    named("check") {
+        finalizedBy("dockerComposeDown")
+    }
 }
+/** End of the configuration to set up the testing environment **/

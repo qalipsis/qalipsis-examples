@@ -32,7 +32,6 @@ import io.qalipsis.plugins.graphite.graphite
 import io.qalipsis.plugins.graphite.poll.model.GraphiteQuery
 import io.qalipsis.plugins.graphite.poll.poll
 import io.qalipsis.plugins.graphite.render.model.GraphiteMetricsTime
-import io.qalipsis.plugins.graphite.render.model.GraphiteMetricsTimeSignUnit
 import io.qalipsis.plugins.graphite.render.model.GraphiteMetricsTimeUnit
 import io.qalipsis.plugins.graphite.save.GraphiteRecord
 import io.qalipsis.plugins.graphite.save.save
@@ -128,8 +127,7 @@ class GraphiteSaveAndPoll {
                                 // By default, Graphite provides only the latest 24 hours.
                                 .from(
                                     GraphiteMetricsTime(
-                                        2,
-                                        GraphiteMetricsTimeSignUnit.MINUS,
+                                        -2,
                                         GraphiteMetricsTimeUnit.DAYS
                                     )
                                 )

@@ -14,71 +14,55 @@
  * permissions and limitations under the License.
  */
 
-
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import io.qalipsis.gradle.bootstrap.tasks.RunQalipsis
 
 plugins {
-    application
-    kotlin("jvm")
-    kotlin("kapt")
+    id("io.qalipsis.bootstrap")
     id("com.github.johnrengelman.shadow") version "7.1.1"
+    id("com.palantir.docker-compose")
 }
 
 description = "Jakarta EE Messaging demo. Show how to produce and consume"
 
-// Configure both compileKotlin and compileTestKotlin.
-tasks.withType<KotlinCompile>().configureEach {
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.majorVersion
-        javaParameters = true
-    }
-}
-
-kapt {
-    includeCompileClasspath = true
-}
-
-repositories {
-    maven {
-        name = "jitpack-dependencies"
-        setUrl("https://jitpack.io")
+qalipsis {
+    plugins {
+        jakartaMessaging()
+        jackson()
     }
 }
 
 dependencies {
-    implementation(platform("io.qalipsis:qalipsis-platform:0.7.c-SNAPSHOT"))
-    kapt(platform("io.qalipsis:qalipsis-platform:0.7.c-SNAPSHOT"))
-    kapt("io.qalipsis:qalipsis-api-processors")
-
-    runtimeOnly("io.qalipsis:qalipsis-runtime")
-    runtimeOnly("io.qalipsis:qalipsis-head")
-    runtimeOnly("io.qalipsis:qalipsis-factory")
-
-    implementation("io.qalipsis.plugin:qalipsis-plugin-jakarta-ee-messaging")
-    implementation("io.qalipsis.plugin:qalipsis-plugin-jackson")
-    implementation("org.apache.activemq:artemis-jakarta-client:2.26.0")
-
+    implementation("org.apache.activemq:artemis-jakarta-client:2.+")
     implementation("io.kotest:kotest-assertions-core:5.4.2")
 }
 
-task<JavaExec>("runCampaignForProduceAndConsumeFromQueue") {
-    group = "application"
-    description = "Start a campaign for jakarta-produce-and-consume scenario"
-    mainClass.set("io.qalipsis.runtime.Qalipsis")
-    maxHeapSize = "256m"
-    args("--autostart", "-c", "report.export.console.enabled=true", "-s", "jakarta-produce-and-consume-from-queue")
-    workingDir = projectDir
-    classpath = sourceSets["main"].runtimeClasspath
+tasks {
+    create("runCampaignForProduceAndConsumeFromQueue", RunQalipsis::class.java) {
+        scenarios("jakarta-produce-and-consume-from-queue")
+    }
+    create("runCampaignForProduceAndConsumeFromTopic", RunQalipsis::class.java) {
+        scenarios("jakarta-produce-and-consume-from-topic")
+    }
+
+    withType<RunQalipsis> {
+        configuration(
+            "report.export.console.enabled" to "true",
+            "report.export.junit.enabled" to "true",
+            "report.export.junit.folder" to project.layout.buildDirectory.dir("test-results").get().asFile.path
+        )
+    }
+
+    named("check") {
+        dependsOn("runCampaignForProduceAndConsumeFromQueue", "runCampaignForProduceAndConsumeFromTopic")
+    }
 }
 
-task<JavaExec>("runCampaignForProduceAndConsumeFromTopic") {
-    group = "application"
-    description = "Start a campaign for jakarta-produce-and-consume scenario"
-    mainClass.set("io.qalipsis.runtime.Qalipsis")
-    maxHeapSize = "256m"
-    args("--autostart", "-c", "report.export.console.enabled=true", "-s", "jakarta-produce-and-consume-from-topic")
-    workingDir = projectDir
-    classpath = sourceSets["main"].runtimeClasspath
+/** Beginning of the configuration for the shadow plugin. **/
+tasks {
+    withType<ShadowJar> {
+        isZip64 = true
+    }
 }
 
 application {
@@ -87,3 +71,13 @@ application {
 }
 
 val shadowJarName = "examples-${project.name}-${project.version}-qalipsis.jar"
+/** End of the configuration for the shadow plugin. **/
+
+/** Start of the configuration to set up the testing environment **/
+tasks {
+    withType<RunQalipsis> {
+        dependsOn("dockerComposeUp")
+        finalizedBy("dockerComposeDown")
+    }
+}
+/** End of the configuration to set up the testing environment **/
