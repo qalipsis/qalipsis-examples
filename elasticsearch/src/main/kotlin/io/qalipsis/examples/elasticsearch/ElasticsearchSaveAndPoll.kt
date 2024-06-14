@@ -22,12 +22,12 @@ import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.ints.shouldBeExactly
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.regular
+import io.qalipsis.api.executionprofile.immediately
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.delay
 import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.flatten
-import io.qalipsis.api.steps.innerJoinUncasted
+import io.qalipsis.api.steps.innerJoin
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.verify
 import io.qalipsis.plugins.elasticsearch.Document
@@ -52,7 +52,7 @@ class ElasticsearchSaveAndPoll {
         scenario {
             minionsCount = 10
             profile {
-                regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
+                immediately()
             }
         }
             .start()
@@ -89,36 +89,35 @@ class ElasticsearchSaveAndPoll {
             }
             .map { it.input }
             .delay(duration = Duration.ofSeconds(2)) // a small delay of 2 seconds before proceed, because on elastic search persistence of data is not immediate
-            .innerJoinUncasted(
-                using = { correlationRecord -> correlationRecord.value.deviceId },
-                on = {
-                    it.elasticsearch().poll {
-                        name = "poll"
-                        client { RestClient.builder(HttpHost.create("http://localhost:9200")).build() }
-                        query {
-                            """{
+            .innerJoin()
+            .using { correlationRecord -> correlationRecord.value.deviceId }
+            .on {
+                it.elasticsearch().poll {
+                    name = "poll"
+                    client { RestClient.builder(HttpHost.create("http://localhost:9200")).build() }
+                    query {
+                        """{
                                 "query":{
                                     "match_all":{}
                                 },
                                 "sort" : ["_score"]
                             }""".trimIndent()
-                        }
-                        index("battery-state*") // we specify the table where we want to fetch data
-                        pollDelay(delay = Duration.ofSeconds(1)) // we pull data every 2 seconds to avoid saturate the server with requests
                     }
-                        .deserialize(targetClass = BatteryState::class) // use this method to transform your elastic search result to a specific object of your class
-                        .flatten()
-                        .map { record ->
-                            record.value
-                        }
-                },
-                having = { correlationRecord -> (correlationRecord.value as BatteryState).deviceId }
-            )
+                    index("battery-state*") // we specify the table where we want to fetch data
+                    pollDelay(delay = Duration.ofSeconds(1)) // we pull data every 2 seconds to avoid saturate the server with requests
+                }
+                    .deserialize(targetClass = BatteryState::class) // use this method to transform your elastic search result to a specific object of your class
+                    .flatten()
+                    .map { record ->
+                        record.value
+                    }
+            }
+            .having { correlationRecord -> correlationRecord.value.deviceId }
             .filterNotNull()
             .verify { result ->
                 result.asClue {
                     assertSoftly {
-                        it.first.batteryLevel shouldBeExactly (it.second as BatteryState).batteryLevel
+                        it.first.batteryLevel shouldBeExactly it.second.batteryLevel
                     }
                 }
             }

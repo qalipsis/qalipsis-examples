@@ -22,7 +22,7 @@ import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.ints.shouldBeExactly
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.regular
+import io.qalipsis.api.executionprofile.immediately
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.innerJoin
@@ -49,7 +49,7 @@ class RedisSaveAndPoll {
         scenario {
             minionsCount = 20
             profile {
-                regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
+                immediately()
             }
         }
             .start()
@@ -80,42 +80,40 @@ class RedisSaveAndPoll {
 
                 records { _, input ->
                     listOf(
-                        SetRecord("battery_state_save_and_poll",
+                        SetRecord(
+                            "battery_state_save_and_poll",
                             objectMapper.writeValueAsString(input)
                         )
                     )
                 }
             }
-            .map{
+            .map {
                 it.input
             }
-            .innerJoin(
-                using = {correlationRecord -> correlationRecord.value.deviceId },
-
-                on = {
-                    it.redisLettuce()
-                        .pollSscan {
-                            connection {
-                                nodes = listOf("localhost:6379")
-                                database = 0
-                                redisConnectionType = RedisConnectionType.SINGLE
-                                authPassword = ""
-                                authUser = ""
-                            }
-
-                            keyOrPattern("battery_state_save_and_poll")
-
-                            pollDelay(Duration.ofSeconds(1))
+            .innerJoin()
+            .using { correlationRecord -> correlationRecord.value.deviceId }
+            .on {
+                it.redisLettuce()
+                    .pollSscan {
+                        connection {
+                            nodes = listOf("localhost:6379")
+                            database = 0
+                            redisConnectionType = RedisConnectionType.SINGLE
+                            authPassword = ""
+                            authUser = ""
                         }
-                        .flatten()
-                        .map{ result ->
-                            val batteryState = objectMapper.readValue(result.value, BatteryState::class.java)
-                            batteryState
-                        }
-                },
 
-                having = {correlationRecord -> correlationRecord.value.deviceId}
-            )
+                        keyOrPattern("battery_state_save_and_poll")
+
+                        pollDelay(Duration.ofSeconds(1))
+                    }
+                    .flatten()
+                    .map { result ->
+                        val batteryState = objectMapper.readValue(result.value, BatteryState::class.java)
+                        batteryState
+                    }
+            }
+            .having { correlationRecord -> correlationRecord.value.deviceId }
             .filterNotNull()
             .verify { result ->
                 result.asClue {

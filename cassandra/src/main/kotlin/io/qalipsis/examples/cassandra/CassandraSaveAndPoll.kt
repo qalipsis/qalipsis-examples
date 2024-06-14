@@ -20,7 +20,7 @@ import com.datastax.oss.driver.api.core.CqlIdentifier
 import com.datastax.oss.driver.api.core.type.reflect.GenericType
 import io.kotest.matchers.ints.shouldBeExactly
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.regular
+import io.qalipsis.api.executionprofile.immediately
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.innerJoin
@@ -45,7 +45,7 @@ class CassandraSaveAndPoll {
         scenario {
             minionsCount = 20
             profile {
-                regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
+                immediately()
             }
         }
             .start()
@@ -100,36 +100,36 @@ class CassandraSaveAndPoll {
                 }
             }
             .map { it.input }
-            .innerJoin(
-                using = { correlationRecord -> correlationRecord.value.deviceId },
-                on = {
-                    it.cassandra().poll {
-                        connect {
-                            servers = listOf("localhost:9042")
-                            keyspace = "iot"
-                            datacenterName = "datacenter1"
-                        }
-                        query(queryString = "SELECT deviceid, timestamp, batterylevel FROM batteryState WHERE company = ? ORDER BY timestamp")
-                        parameters("ACME Inc.")
-                        tieBreaker {
-                            name = "timestamp"
-                            type = GenericType.INSTANT
-                        }
-                        pollDelay(duration = Duration.ofSeconds(1))
+            .innerJoin()
+            .using { correlationRecord -> correlationRecord.value.deviceId }
+            .on {
+                it.cassandra().poll {
+                    connect {
+                        servers = listOf("localhost:9042")
+                        keyspace = "iot"
+                        datacenterName = "datacenter1"
                     }
-                        .flatten()
-                        .map { record ->
-                            BatteryState(
-                                deviceId = record.value[CqlIdentifier.fromCql("deviceid")] as String,
-                                timestamp = record.value[CqlIdentifier.fromCql("timestamp")] as Instant,
-                                batteryLevel = (record.value[CqlIdentifier.fromCql("batterylevel")] as Number).toInt()
-                            )
-                        }
-                },
-                having = { correlationRecord ->
-                    correlationRecord.value.deviceId
+                    query(queryString = "SELECT deviceid, timestamp, batterylevel FROM batteryState WHERE company = ? ORDER BY timestamp")
+                    parameters("ACME Inc.")
+                    tieBreaker {
+                        name = "timestamp"
+                        type = GenericType.INSTANT
+                    }
+                    pollDelay(duration = Duration.ofSeconds(1))
                 }
-            ).configure {
+                    .flatten()
+                    .map { record ->
+                        BatteryState(
+                            deviceId = record.value[CqlIdentifier.fromCql("deviceid")] as String,
+                            timestamp = record.value[CqlIdentifier.fromCql("timestamp")] as Instant,
+                            batteryLevel = (record.value[CqlIdentifier.fromCql("batterylevel")] as Number).toInt()
+                        )
+                    }
+            }
+            .having { correlationRecord ->
+                correlationRecord.value.deviceId
+            }
+            .configure {
                 timeout(duration = 5000L)
                 report {
                     reportErrors = true

@@ -132,6 +132,12 @@ jobs:
         with:
           arguments: :quickstart-http:check
 
+      - name: Distributed system
+        if: always()
+        uses: gradle/gradle-build-action@v3.3.2
+        with:
+          arguments: :distributed-system:check
+
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v4
         if: always()

@@ -20,7 +20,7 @@ import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.ints.shouldBeExactly
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.regular
+import io.qalipsis.api.executionprofile.immediately
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.innerJoin
@@ -44,7 +44,7 @@ class RedisProduceAndConsume {
         scenario {
             minionsCount = 20
             profile {
-                regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
+                immediately()
             }
         }
             .start()
@@ -86,41 +86,38 @@ class RedisProduceAndConsume {
             .map {
                 it.input
             }
-            .innerJoin(
-                using = { correlationRecord ->
-                    correlationRecord.value.deviceId
-                },
-
-                on = {
-                    it.redisLettuce()
-                        .streamsConsume {
-                            connection {
-                                nodes = listOf("localhost:6379")
-                                database = 0
-                                redisConnectionType = RedisConnectionType.SINGLE
-                                authPassword = ""
-                                authUser = ""
-                            }
-
-                            streamKey(key = "battery_state_produce_and_consume")
-                            offset(LettuceStreamsConsumerOffset.FROM_BEGINNING)
-                            group("consumer")
+            .innerJoin()
+            .using { correlationRecord ->
+                correlationRecord.value.deviceId
+            }
+            .on {
+                it.redisLettuce()
+                    .streamsConsume {
+                        connection {
+                            nodes = listOf("localhost:6379")
+                            database = 0
+                            redisConnectionType = RedisConnectionType.SINGLE
+                            authPassword = ""
+                            authUser = ""
                         }
-                        .flatten()
-                        .map { result ->
-                            val batteryState = result.value
-                            BatteryState(
-                                deviceId = batteryState.getValue("device_id"),
-                                batteryLevel = batteryState.getValue("battery_level").toInt(),
-                                timestamp = Instant.ofEpochSecond(batteryState.getValue("timestamp").toLong())
-                            )
-                        }
-                },
 
-                having = { correlationRecord ->
-                    correlationRecord.value.deviceId
-                }
-            )
+                        streamKey(key = "battery_state_produce_and_consume")
+                        offset(LettuceStreamsConsumerOffset.FROM_BEGINNING)
+                        group("consumer")
+                    }
+                    .flatten()
+                    .map { result ->
+                        val batteryState = result.value
+                        BatteryState(
+                            deviceId = batteryState.getValue("device_id"),
+                            batteryLevel = batteryState.getValue("battery_level").toInt(),
+                            timestamp = Instant.ofEpochSecond(batteryState.getValue("timestamp").toLong())
+                        )
+                    }
+            }
+            .having { correlationRecord ->
+                correlationRecord.value.deviceId
+            }
             .filterNotNull()
             .verify { result ->
                 result.asClue {

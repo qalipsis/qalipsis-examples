@@ -159,6 +159,26 @@ services:
       - redpanda
       - timescale
 
+  influxdb:
+    container_name: influxdb-server
+    image: influxdb
+    restart: always
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: qalipsis
+      DOCKER_INFLUXDB_INIT_PASSWORD: qalipsis
+      DOCKER_INFLUXDB_INIT_ORG: qalipsis
+      DOCKER_INFLUXDB_INIT_BUCKET: iot
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: qalipsis
+    ports:
+      - "18086:8086"
+    healthcheck:
+      test: curl http://localhost:8086 | grep "InfluxDB is a time series platform"
+      interval: 5s
+      timeout: 2s
+      retries: 20
+      start_period: 10s
+
   healthy_checker:
     container_name: distributed_healthiness_checker
     image: busybox
@@ -168,6 +188,8 @@ services:
       kibana:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      influxdb:
         condition: service_healthy
       redpanda:
         condition: service_healthy

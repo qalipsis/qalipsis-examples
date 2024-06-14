@@ -6,7 +6,7 @@ import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.ints.shouldBeExactly
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.regular
+import io.qalipsis.api.executionprofile.immediately
 import io.qalipsis.api.messaging.deserializer.MessageJsonDeserializer
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.filterNotNull
@@ -33,7 +33,7 @@ class MQTTProduceAndConsume {
         scenario {
             minionsCount = 20
             profile {
-                regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
+                immediately()
             }
         }.start()
             .jackson() // we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
@@ -64,9 +64,11 @@ class MQTTProduceAndConsume {
                         )
                     )
                 }
-            }.map { it.input }.innerJoin(using = { correlationRecord ->
+            }.map { it.input }.innerJoin()
+            .using { correlationRecord ->
                 correlationRecord.value.deviceId
-            }, on = {
+            }
+            .on {
                 it.netty().mqttSubscribe {
                     connect {
                         host = "localhost"
@@ -77,9 +79,11 @@ class MQTTProduceAndConsume {
                 }.deserialize(MessageJsonDeserializer(BatteryState::class)).map { result ->
                     result.value
                 }.filterNotNull()
-            }, having = { correlationRecord ->
+            }
+            .having { correlationRecord ->
                 correlationRecord.value.deviceId
-            }).filterNotNull().verify { result ->
+            }
+            .filterNotNull().verify { result ->
                 result.asClue {
                     assertSoftly {
                         it.first.batteryLevel shouldBeExactly (it.second).batteryLevel

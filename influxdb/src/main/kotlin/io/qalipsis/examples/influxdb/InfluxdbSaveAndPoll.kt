@@ -21,7 +21,7 @@ import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.ints.shouldBeExactly
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.regular
+import io.qalipsis.api.executionprofile.immediately
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.innerJoin
@@ -42,7 +42,7 @@ class InfluxdbSaveAndPoll {
         scenario {
             minionsCount = 20
             profile {
-                regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
+                immediately()
             }
         }
             .start()
@@ -87,48 +87,47 @@ class InfluxdbSaveAndPoll {
                 }
             }
             .map { it.input }
-            .innerJoin(
-                using = { correlationRecord ->
-                    correlationRecord.value.deviceId
-                },
-                on = {
-                    it.influxdb().poll {
-                        connect {
-                            server(
-                                url = "http://localhost:18086",
-                                bucket = "iot",
-                                org = "qalipsis"
-                            )
+            .innerJoin()
+            .using { correlationRecord ->
+                correlationRecord.value.deviceId
+            }
+            .on {
+                it.influxdb().poll {
+                    connect {
+                        server(
+                            url = "http://localhost:18086",
+                            bucket = "iot",
+                            org = "qalipsis"
+                        )
 
-                            basic(user = "qalipsis_user", password = "qalipsis_user_password")
-                        }
+                        basic(user = "qalipsis_user", password = "qalipsis_user_password")
+                    }
 
-                        query(
-                            """
+                    query(
+                        """
                             from(bucket: "iot")
                                 |> range(start: -15m)
                                 |> filter(
                                     fn: (r) => r._measurement == "pollable_battery_state" 
                                     )               
                         """.trimIndent()
-                        )
+                    )
 
-                        pollDelay(Duration.ofSeconds(1))
+                    pollDelay(Duration.ofSeconds(1))
 
-                    }
-                        .flatten()
-                        .map { fluxRecord ->
-                            BatteryState(
-                                deviceId = fluxRecord.values["device_id"] as String,
-                                timestamp = Instant.ofEpochSecond((fluxRecord.values["timestamp"] as String).toLong()),
-                                batteryLevel = (fluxRecord.value as Number).toInt()
-                            )
-                        }
-                },
-                having = { correlationRecord ->
-                    correlationRecord.value.deviceId
                 }
-            )
+                    .flatten()
+                    .map { fluxRecord ->
+                        BatteryState(
+                            deviceId = fluxRecord.values["device_id"] as String,
+                            timestamp = Instant.ofEpochSecond((fluxRecord.values["timestamp"] as String).toLong()),
+                            batteryLevel = (fluxRecord.value as Number).toInt()
+                        )
+                    }
+            }
+            .having { correlationRecord ->
+                correlationRecord.value.deviceId
+            }
             .filterNotNull()
             .verify { result ->
                 result.asClue {

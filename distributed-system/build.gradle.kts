@@ -28,9 +28,10 @@ description = "Demo how to test a distributed system"
 qalipsis {
     plugins {
         apacheKafka()
-        elasticsearch()
         netty()
         r2dbcJasync()
+        elasticsearch()
+        influxDb()
     }
 }
 
@@ -45,16 +46,11 @@ tasks {
             "-Xms2G",
             "-XX:-MaxFDLimit",
             "-server",
-            "-Dio.netty.leakDetectionLevel=advanced",
             "-XX:+UseG1GC",
             "-XX:MaxGCPauseMillis=20",
             "-XX:InitiatingHeapOccupancyPercent=35",
             "-XX:+ExplicitGCInvokesConcurrent",
-            "-XX:MaxInlineLevel=15",
-            "-Djava.awt.headless=true",
-            "-XX:+HeapDumpOnOutOfMemoryError",
-            "-XX:HeapDumpPath=heap-dump.hprof",
-            "-XX:ErrorFile=logs/hs_err_pid%p.log"
+            "-XX:MaxInlineLevel=15"
         )
         maxHeapSize = "2G"
 

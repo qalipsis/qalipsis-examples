@@ -23,7 +23,7 @@ import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.ints.shouldBeExactly
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.regular
+import io.qalipsis.api.executionprofile.immediately
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.innerJoin
@@ -55,7 +55,7 @@ class MongoDbSaveAndPoll {
         scenario {
             minionsCount = 20
             profile {
-                regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
+                immediately()
             }
         }.start()
             .jackson() // we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object
@@ -94,37 +94,38 @@ class MongoDbSaveAndPoll {
                 }
             }
             .map { it.input }
-            .innerJoin(
-                using = { correlationRecord -> correlationRecord.value.deviceId },
-                on = {
-                    it.mongodb().poll {
-                        name = "poll"
+            .innerJoin()
+            .using { correlationRecord -> correlationRecord.value.deviceId }
+            .on {
+                it.mongodb().poll {
+                    name = "poll"
 
-                        connect {
-                            MongoClients.create("mongodb://admin:password@localhost:27017")
-                        }
-
-                        search {
-                            database = "iot"
-                            collection = "batteryState"
-                            query = Document()
-                            sort = linkedMapOf("deviceId" to Sorting.ASC)
-                            tieBreaker = "deviceId"
-                        }
-
-                        pollDelay(Duration.ofSeconds(1)) // we pull the database after every on second
-
-                    }.flatten().map { record ->
-                        val batteryState = record.value
-                        BatteryState(
-                            deviceId = batteryState.getValue("deviceId") as String,
-                            batteryLevel = batteryState.getValue("batteryLevel") as Int,
-                            timestamp = Instant.ofEpochSecond((batteryState.getValue("timestamp") as Double).toLong())
-                        )
+                    connect {
+                        MongoClients.create("mongodb://admin:password@localhost:27017")
                     }
-                }, having = { correlationRecord ->
-                    correlationRecord.value.deviceId
-                })
+
+                    search {
+                        database = "iot"
+                        collection = "batteryState"
+                        query = Document()
+                        sort = linkedMapOf("deviceId" to Sorting.ASC)
+                        tieBreaker = "deviceId"
+                    }
+
+                    pollDelay(Duration.ofSeconds(1)) // we pull the database after every on second
+
+                }.flatten().map { record ->
+                    val batteryState = record.value
+                    BatteryState(
+                        deviceId = batteryState.getValue("deviceId") as String,
+                        batteryLevel = batteryState.getValue("batteryLevel") as Int,
+                        timestamp = Instant.ofEpochSecond((batteryState.getValue("timestamp") as Double).toLong())
+                    )
+                }
+            }
+            .having { correlationRecord ->
+                correlationRecord.value.deviceId
+            }
             .filterNotNull()
             .verify { result ->
                 result.asClue {
