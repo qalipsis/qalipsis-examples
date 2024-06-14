@@ -2,7 +2,7 @@ campaign:
   name: rabbitmq-${random.shortuuid}
   configuration:
     validation:
-      max-execution-duration: PT30S
+      max-execution-duration: PT40S
 
 logging:
   console: true

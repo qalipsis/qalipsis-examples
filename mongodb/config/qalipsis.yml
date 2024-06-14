@@ -2,7 +2,7 @@ campaign:
   name: mongodb-${random.shortuuid}
   configuration:
     validation:
-      max-execution-duration: PT30S
+      max-execution-duration: PT40S
 
 events:
   root: WARN

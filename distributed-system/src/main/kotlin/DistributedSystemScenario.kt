@@ -28,7 +28,6 @@ import io.qalipsis.api.annotations.Scenario
 import io.qalipsis.api.context.StepContext
 import io.qalipsis.api.events.EventsLogger
 import io.qalipsis.api.executionprofile.regular
-import io.qalipsis.api.executionprofile.stages
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.*
 import io.qalipsis.api.steps.datasource.DatasourceRecord
@@ -76,11 +75,8 @@ class DistributedSystemScenario(
         scenario {
             minionsCount = 100
             profile {
-                regular(periodMs = 500, minionsCountProLaunch = 50)
-                stages {
-                    stage(10, 1000, 5000, 25)
-                    stage(50, 1000, 60000, 25)
-                }
+                //immediately()
+                regular(periodMs = 500, minionsCountProLaunch = 100)
             }
         }
             .start()
@@ -128,6 +124,9 @@ class DistributedSystemScenario(
                 }
             }.configure {
                 name = "Verify data push"
+                report {
+                    reportErrors = true
+                }
             }
             .map { it.input } // Only keep the device state as input for the next steps.
             .split {
@@ -147,9 +146,9 @@ class DistributedSystemScenario(
      * Verifies the correctness of the data in Elasticsearch and the latency.
      */
     private fun StepSpecification<*, DeviceState, *>.verifyJdbc() {
-        innerJoin(
-            using = { deviceState -> deviceState.value.deviceId },
-            on = {
+        innerJoin()
+            .using { deviceState -> deviceState.value.deviceId }
+            .on {
                 it.r2dbcJasync()
                     .poll {
                         name = "poll.in"
@@ -161,17 +160,17 @@ class DistributedSystemScenario(
                             database = jdbcDatabase
                         }
                         query("""SELECT * FROM device_state order by "timestamp"""")
-                        pollDelay(Duration.ofSeconds(2))
+                        pollDelay(Duration.ofSeconds(1))
                     }.flatten()
-            },
-            having = { correlationRecord -> correlationRecord.value.value["device_id"] }
-        ).configure {
-            name = "join-request-in-timescale"
-            timeout(10_000) // We expect the DB record to be available in the next 10 seconds.
-            report {
-                reportErrors = true
             }
-        }
+            .having { correlationRecord -> correlationRecord.value.value["device_id"] as? String }
+            .configure {
+                name = "join-request-in-timescale"
+                timeout(10_000) // We expect the DB record to be available in the next 10 seconds.
+                report {
+                    reportErrors = true
+                }
+            }
             .execute { context: StepContext<Pair<DeviceState, DatasourceRecord<Map<String, Any?>>>?, Pair<DeviceState, DatasourceRecord<Map<String, Any?>>>?> ->
                 val input = context.receive()
                 val (deviceState, dbRecord) = input!!
@@ -199,6 +198,9 @@ class DistributedSystemScenario(
                 )
             }.configure {
                 name = "Verify Timescale data"
+                report {
+                    reportErrors = true
+                }
             }
     }
 
@@ -208,9 +210,9 @@ class DistributedSystemScenario(
     private fun StepSpecification<*, DeviceState, *>.verifyKafka(
         kafkaBootstrap: String
     ) {
-        innerJoin(
-            using = { correlationRecord -> correlationRecord.value.deviceId },
-            on = {
+        innerJoin()
+            .using { correlationRecord -> correlationRecord.value.deviceId }
+            .on {
                 it.kafka()
                     .consume {
                         name = "consume-http-requests"
@@ -228,15 +230,15 @@ class DistributedSystemScenario(
                         pollTimeout(pollTimeout = 1000)
                         offsetReset(offsetReset = OffsetResetStrategy.EARLIEST)
                     }.flatten(Serdes.ByteArray().deserializer(), jsonSerde<DeviceState>().deserializer())
-            },
-            having = { correlationRecord -> correlationRecord.value.record.value!!.deviceId }
-        ).configure {
-            name = "join-request-with-kafka"
-            timeout(duration = 20_000) // We expect the Kafka record to be available in the next 20 seconds.
-            report {
-                reportErrors = true
             }
-        }
+            .having { correlationRecord -> correlationRecord.value.record.value!!.deviceId }
+            .configure {
+                name = "join-request-with-kafka"
+                timeout(duration = 10_000) // We expect the Kafka record to be available in the next 20 seconds.
+                report {
+                    reportErrors = true
+                }
+            }
             .execute { context: StepContext<Pair<DeviceState, KafkaConsumerResult<ByteArray?, DeviceState?>>?, Pair<DeviceState, KafkaConsumerResult<*, DeviceState?>>?> ->
                 val input = context.receive()
                 val (deviceState, kafkaResult) = input!!
@@ -255,6 +257,9 @@ class DistributedSystemScenario(
                 assertThat(actual = kafkaResult.record.receivedTimestamp - deviceState.timestamp).isLessThan(5000)
             }.configure {
                 name = "Verify Kafka data"
+                report {
+                    reportErrors = true
+                }
             }
     }
 
@@ -267,7 +272,6 @@ class DistributedSystemScenario(
         val positionLat: Double,
         val positionLon: Double,
         val batteryLevelPercentage: Int
-    ) {
-    }
+    )
 
 }

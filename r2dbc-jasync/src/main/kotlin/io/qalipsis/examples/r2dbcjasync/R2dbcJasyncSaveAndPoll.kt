@@ -20,7 +20,7 @@ import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.ints.shouldBeExactly
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.regular
+import io.qalipsis.api.executionprofile.immediately
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.innerJoin
@@ -44,7 +44,7 @@ class R2dbcJasyncSaveAndPoll {
         scenario {
             minionsCount = 20
             profile {
-                regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
+                immediately()
             }
         }
             .start()
@@ -106,40 +106,39 @@ class R2dbcJasyncSaveAndPoll {
             .map {
                 it.input
             }
-            .innerJoin(
-                using = { correlationRecord ->
-                    correlationRecord.value.deviceId
-                },
-                on = {
-                    it.r2dbcJasync().poll {
+            .innerJoin()
+            .using { correlationRecord ->
+                correlationRecord.value.deviceId
+            }
+            .on {
+                it.r2dbcJasync().poll {
 
-                        protocol(Protocol.POSTGRESQL)
+                    protocol(Protocol.POSTGRESQL)
 
-                        connection {
-                            database = "postgres"
-                            port = 15432
-                            username = "postgres"
-                            password = "root"
-                        }
-
-                        query("select * from battery_state order by \"timestamp\"")
-
-                        pollDelay(Duration.ofSeconds(1))
+                    connection {
+                        database = "postgres"
+                        port = 15432
+                        username = "postgres"
+                        password = "root"
                     }
-                        .flatten()
-                        .map { record ->
-                            val batteryState = record.value
-                            BatteryState(
-                                deviceId = batteryState.getValue("device_id") as String,
-                                batteryLevel = batteryState.getValue("battery_level") as Int,
-                                timestamp = Instant.ofEpochSecond((batteryState.getValue("timestamp") as Int).toLong())
-                            )
-                        }
-                },
-                having = { correlationRecord ->
-                    correlationRecord.value.deviceId
+
+                    query("select * from battery_state order by \"timestamp\"")
+
+                    pollDelay(Duration.ofSeconds(1))
                 }
-            )
+                    .flatten()
+                    .map { record ->
+                        val batteryState = record.value
+                        BatteryState(
+                            deviceId = batteryState.getValue("device_id") as String,
+                            batteryLevel = batteryState.getValue("battery_level") as Int,
+                            timestamp = Instant.ofEpochSecond((batteryState.getValue("timestamp") as Int).toLong())
+                        )
+                    }
+            }
+            .having { correlationRecord ->
+                correlationRecord.value.deviceId
+            }
             .filterNotNull()
             .verify { result ->
                 result.asClue {

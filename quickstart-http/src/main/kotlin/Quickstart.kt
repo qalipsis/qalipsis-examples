@@ -26,7 +26,7 @@ import io.netty.handler.codec.http.HttpHeaderValues
 import io.netty.handler.codec.http.HttpMethod
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.regular
+import io.qalipsis.api.executionprofile.stages
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.verify
 import io.qalipsis.plugins.netty.http.request.SimpleHttpRequest
@@ -44,7 +44,9 @@ class Quickstart {
         scenario {
             minionsCount = 1_000
             profile {
-                regular(periodMs = 500, minionsCountProLaunch = 100)
+                stages {
+                    stage(100.0, 25_000, 30_000)
+                }
             }
         }
             .start()
@@ -61,7 +63,7 @@ class Quickstart {
                     tls { disableCertificateVerification = true }
                 }
                 request { _, _ ->
-                    SimpleHttpRequest(HttpMethod.POST, "/echo").body(
+                    simple(HttpMethod.POST, "/echo").body(
                         "Hello World!",
                         HttpHeaderValues.TEXT_PLAIN
                     )

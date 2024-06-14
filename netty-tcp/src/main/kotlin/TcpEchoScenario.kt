@@ -22,7 +22,7 @@ import assertk.assertions.isLessThan
 import assertk.assertions.isNotNull
 import assertk.assertions.prop
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.regular
+import io.qalipsis.api.executionprofile.immediately
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.returns
@@ -52,7 +52,7 @@ class TcpEchoScenario {
         scenario {
             minionsCount = minions
             profile {
-                regular(1000, 100)
+                immediately()
             }
         }
             .start()

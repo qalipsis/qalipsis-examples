@@ -20,7 +20,7 @@ import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.ints.shouldBeExactly
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.regular
+import io.qalipsis.api.executionprofile.immediately
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.delay
 import io.qalipsis.api.steps.filterNotNull
@@ -28,17 +28,16 @@ import io.qalipsis.api.steps.flatten
 import io.qalipsis.api.steps.innerJoin
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.verify
+import io.qalipsis.plugins.graphite.client.GraphiteRecord
 import io.qalipsis.plugins.graphite.graphite
-import io.qalipsis.plugins.graphite.poll.model.GraphiteQuery
 import io.qalipsis.plugins.graphite.poll.poll
-import io.qalipsis.plugins.graphite.render.model.GraphiteMetricsTime
-import io.qalipsis.plugins.graphite.render.model.GraphiteMetricsTimeUnit
-import io.qalipsis.plugins.graphite.save.GraphiteRecord
 import io.qalipsis.plugins.graphite.save.save
+import io.qalipsis.plugins.graphite.search.GraphiteMetricsTime
+import io.qalipsis.plugins.graphite.search.GraphiteMetricsTimeUnit
+import io.qalipsis.plugins.graphite.search.GraphiteQuery
 import io.qalipsis.plugins.jackson.csv.csvToObject
 import io.qalipsis.plugins.jackson.jackson
 import java.time.Duration
-import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -56,7 +55,7 @@ class GraphiteSaveAndPoll {
         scenario {
             minionsCount = 20
             profile {
-                regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
+                immediately()
             }
         }
             .start()
@@ -105,51 +104,45 @@ class GraphiteSaveAndPoll {
             }
             .delay(Duration.ofSeconds(1))
             .map { it.input }
-            .innerJoin(
-                using = { correlationRecord ->
-                    correlationRecord.value.deviceId
-                },
-                on = {
-                    it.graphite().poll {
-                        name = "my-poll-step"
+            .innerJoin()
+            .using { correlationRecord ->
+                correlationRecord.value.deviceId
+            }
+            .on {
+                it.graphite().poll {
+                    name = "my-poll-step"
 
-                        connect {
-                            server("http://localhost:8080")
-                        }
-
-                        monitoring {
-                            events = false
-                            meters = true
-                        }
-
-                        query(
-                            GraphiteQuery("device.battery-state.*")
-                                // By default, Graphite provides only the latest 24 hours.
-                                .from(
-                                    GraphiteMetricsTime(
-                                        -2,
-                                        GraphiteMetricsTimeUnit.DAYS
-                                    )
-                                )
-                                .noNullPoints(true)
-                        )
-                        broadcast(123, Duration.ofSeconds(20))
-                        pollDelay(Duration.ofSeconds(1))
+                    connect {
+                        server("http://localhost:8080")
                     }
-                        .flatten()
-                        .map { record ->
-                            val dataPoint = record.dataPoints.first()
-                            BatteryState(
-                                deviceId = record.target.substringAfter("device.battery-state.").uppercase(),
-                                batteryLevel = dataPoint.value!!.toInt(),
-                                timestamp = Instant.ofEpochSecond(dataPoint.timestamp!!)
-                            )
-                        }
-                },
-                having = { correlationRecord ->
-                    correlationRecord.value.deviceId
+
+                    monitoring {
+                        events = false
+                        meters = true
+                    }
+
+                    query {
+                        GraphiteQuery("device.battery-state.*")
+                            // By default, Graphite provides only the latest 24 hours.
+                            .from(GraphiteMetricsTime(-2, GraphiteMetricsTimeUnit.DAYS))
+                            .noNullPoints(true)
+                    }
+                    broadcast(123, Duration.ofSeconds(20))
+                    pollDelay(Duration.ofSeconds(1))
                 }
-            )
+                    .flatten()
+                    .map { record ->
+                        val dataPoint = record.dataPoints.first()
+                        BatteryState(
+                            deviceId = record.target.substringAfter("device.battery-state.").uppercase(),
+                            batteryLevel = dataPoint.value.toInt(),
+                            timestamp = dataPoint.timestamp
+                        )
+                    }
+            }
+            .having { correlationRecord ->
+                correlationRecord.value.deviceId
+            }
             .filterNotNull()
             .verify { result ->
                 result.asClue {

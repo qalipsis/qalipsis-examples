@@ -19,7 +19,7 @@ package io.qalipsis.examples.kafka
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.regular
+import io.qalipsis.api.executionprofile.immediately
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.innerJoin
@@ -49,7 +49,7 @@ class KafkaProduceAndConsume {
         scenario {
             minionsCount = 20
             profile {
-                regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
+                immediately()
             }
         }
             .start()
@@ -84,28 +84,27 @@ class KafkaProduceAndConsume {
                 }
             }
             .map { it.input }
-            .innerJoin(
-                using = { correlationRecord ->
-                    correlationRecord.value.deviceId
-                },
-                on = {
-                    it.kafka().consume {
-                        bootstrap("localhost:19092")
-                        topics("battery_state") // Define which topic we want to listen
-                        groupId("kafka-example")
-                        offsetReset(OffsetResetStrategy.EARLIEST) // where we want to start consume. EARLIEST starts consuming messages from the beginning of the queue
-                        pollTimeout(Duration.ofSeconds(1))
-                    }
-                        .flatten(Serdes.String().deserializer(), jsonSerde<BatteryState>().deserializer())
-                        .map { result ->
-                            result.record.value
-                        }
-                        .filterNotNull()
-                },
-                having = { correlationRecord ->
-                    correlationRecord.value.deviceId
+            .innerJoin()
+            .using { correlationRecord ->
+                correlationRecord.value.deviceId
+            }
+            .on {
+                it.kafka().consume {
+                    bootstrap("localhost:19092")
+                    topics("battery_state") // Define which topic we want to listen
+                    groupId("kafka-example")
+                    offsetReset(OffsetResetStrategy.EARLIEST) // where we want to start consume. EARLIEST starts consuming messages from the beginning of the queue
+                    pollTimeout(Duration.ofSeconds(1))
                 }
-            )
+                    .flatten(Serdes.String().deserializer(), jsonSerde<BatteryState>().deserializer())
+                    .map { result ->
+                        result.record.value
+                    }
+                    .filterNotNull()
+            }
+            .having { correlationRecord ->
+                correlationRecord.value.deviceId
+            }
     }
 
 }

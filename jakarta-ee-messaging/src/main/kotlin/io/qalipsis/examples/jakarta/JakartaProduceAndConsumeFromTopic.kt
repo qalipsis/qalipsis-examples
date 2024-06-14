@@ -6,7 +6,7 @@ import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.ints.shouldBeExactly
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.regular
+import io.qalipsis.api.executionprofile.immediately
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.innerJoin
@@ -39,7 +39,7 @@ class JakartaProduceAndConsumeFromTopic {
         scenario {
             minionsCount = 20
             profile {
-                regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
+                immediately()
             }
         }
             .start()
@@ -84,32 +84,29 @@ class JakartaProduceAndConsumeFromTopic {
             .map {
                 it.input
             }
-            .innerJoin(
-                using = { correlationRecord ->
-                    correlationRecord.value.deviceId
-                },
-
-                on = {
-                    it.jakarta().consume {
-                        topics("battery_state")
-                        topicConnection {
-                            ActiveMQConnectionFactory(
-                                "tcp://localhost:61616",
-                                "qalipsis_user",
-                                "qalipsis_password"
-                            ).createTopicConnection()
-                        }
+            .innerJoin()
+            .using { correlationRecord ->
+                correlationRecord.value.deviceId
+            }
+            .on {
+                it.jakarta().consume {
+                    topics("battery_state")
+                    topicConnection {
+                        ActiveMQConnectionFactory(
+                            "tcp://localhost:61616",
+                            "qalipsis_user",
+                            "qalipsis_password"
+                        ).createTopicConnection()
                     }
-                        .deserialize(JakartaJsonDeserializer(targetClass = BatteryState::class))
-                        .map { result ->
-                            result.record.value
-                        }
-                },
-
-                having = { correlationRecord ->
-                    correlationRecord.value.deviceId
                 }
-            )
+                    .deserialize(JakartaJsonDeserializer(targetClass = BatteryState::class))
+                    .map { result ->
+                        result.record.value
+                    }
+            }
+            .having { correlationRecord ->
+                correlationRecord.value.deviceId
+            }
             .filterNotNull()
             .verify { result ->
                 result.asClue {

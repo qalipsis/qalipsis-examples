@@ -9,6 +9,10 @@ logging:
         core:
           factories:
             orchestration: ERROR
+        plugins:
+          r2dbc:
+            jasync:
+              poll: DEBUG
 
 # For the executors:
 # - 0 or less means the Kotlin Global Scope
@@ -23,12 +27,22 @@ executors:
   orchestration: 4
 
 meters:
-  elasticsearch:
-    hosts: http://localhost:9200
+  export:
     enabled: true
-    step: 5s
-    index: qalipsis-meters
-    index-date-format: yyyy-MM-dd
+    elasticsearch:
+      hosts: http://localhost:9200
+      enabled: true
+      index: qalipsis-meters
+      store-source: true
+      index-date-format: yyyy-MM-dd
+    influxdb:
+      url: http://localhost:18086
+      enabled: true
+      org: qalipsis
+      bucket: iot
+      prefix: qalipsis
+      user-name: qalipsis
+      password: qalipsis
 
 events:
   root: TRACE
@@ -39,13 +53,25 @@ events:
       min-level: trace
       store-source: true
       publishers: 1
-      batch-size: 30000
+      batch-size: 2000
+    influxdb:
+      url: http://localhost:18086
+      enabled: true
+      min-level: trace
+      linger-period: 10s
+      batch-size: 2000
+      publishers: 1
+      username: qalipsis
+      password: qalipsis
+      org: qalipsis
+      bucket: iot
+
     slf4j:
       enabled: false
       min-level: trace
 
 campaign:
-  minions-count-per-scenario: 2000
+  minions-count-per-scenario: 10000
   minions-factor: 1
   speed-factor: 1
   start-offset-ms: 2000
@@ -56,10 +82,10 @@ http:
     url: https://localhost:18443
   client:
     pool:
-      size: 0
+      size: 20
 
 kafka:
-  bootstrap: localhost:9093
+  bootstrap: localhost:19092
 
 jdbc:
   url: jdbc:postgresql://localhost:25432/qalipsis
@@ -71,4 +97,4 @@ jdbc:
 report:
   export:
     console-live:
-      enabled: false
+      enabled: true

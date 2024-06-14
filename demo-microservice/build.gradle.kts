@@ -65,6 +65,9 @@ dependencies {
     implementation("io.micronaut.liquibase:micronaut-liquibase")
     implementation("io.github.microutils:kotlin-logging:2.1.23")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("org.bouncycastle:bcprov-jdk15on:1.64")
+    implementation("org.bouncycastle:bcprov-ext-jdk15on:1.64")
+    implementation("org.bouncycastle:bcpkix-jdk15on:1.64")
 
     runtimeOnly("ch.qos.logback:logback-classic")
     runtimeOnly("org.fusesource.jansi:jansi:2.4.1")
@@ -191,12 +194,12 @@ task<JavaExec>("runKafkaToDbServer") {
     group = "application"
     description = "Starts the microservice as a Kafka listener to save data into Timescale"
     mainClass.set("io.qalipsis.demo.QalipsisDemoMicroserviceKt")
-    maxHeapSize = "256m"
+    maxHeapSize = "512m"
     jvmArgs("-Dmicronaut.env.deduction=false")
     environment = mapOf(
         "KAFKA_ENABLED" to true,
         "MESSAGING_KAFKA_LISTENER_ENABLED" to true,
-        "KAFKA_BOOTSTRAP_SERVERS" to "localhost:9093",
+        "KAFKA_BOOTSTRAP_SERVERS" to "localhost:19092",
         "REDIS_URI" to "redis://localhost:6379",
         "DATASOURCES_DEFAULT_URL" to "jdbc:postgresql://localhost:25432/qalipsis",
         "DATASOURCES_DEFAULT_USERNAME" to "qalipsis_demo",

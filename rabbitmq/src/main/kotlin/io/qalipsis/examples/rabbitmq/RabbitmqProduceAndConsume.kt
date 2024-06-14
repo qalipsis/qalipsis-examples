@@ -25,7 +25,7 @@ import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.ints.shouldBeExactly
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.regular
+import io.qalipsis.api.executionprofile.immediately
 import io.qalipsis.api.messaging.deserializer.MessageJsonDeserializer
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.filterNotNull
@@ -81,7 +81,7 @@ class RabbitmqProduceAndConsume {
         scenario {
             minionsCount = 10
             profile {
-                regular(periodMs = 1000, minionsCountProLaunch = minionsCount)
+                immediately()
             }
         }
             .start()
@@ -123,34 +123,33 @@ class RabbitmqProduceAndConsume {
             .map {
                 it.input
             }
-            .innerJoin(
-                using = { correlationRecord ->
-                    correlationRecord.value.deviceId
-                },
-                on = {
-                    it.rabbitmq()
-                        .consume {
-                            name = "consume"
-                            connection {
-                                host = "localhost"
-                                port = 5672
-                                username = "qalipsis"
-                                password = "qalipsis"
-                            }
-
-                            queue(queueName = "battery_state")
-
+            .innerJoin()
+            .using { correlationRecord ->
+                correlationRecord.value.deviceId
+            }
+            .on {
+                it.rabbitmq()
+                    .consume {
+                        name = "consume"
+                        connection {
+                            host = "localhost"
+                            port = 5672
+                            username = "qalipsis"
+                            password = "qalipsis"
                         }
-                        .deserialize(valueDeserializer = MessageJsonDeserializer(BatteryState::class)) // use this method to transform your RabbitMQ consumer data to a specific object of your class
-                        .map { result ->
-                            result.value
-                        }
-                        .filterNotNull()
-                },
-                having = { correlationRecord ->
-                    correlationRecord.value.deviceId
-                }
-            )
+
+                        queue(queueName = "battery_state")
+
+                    }
+                    .deserialize(valueDeserializer = MessageJsonDeserializer(BatteryState::class)) // use this method to transform your RabbitMQ consumer data to a specific object of your class
+                    .map { result ->
+                        result.value
+                    }
+                    .filterNotNull()
+            }
+            .having { correlationRecord ->
+                correlationRecord.value.deviceId
+            }
             .filterNotNull()
             .verify { result ->
                 result.asClue {
