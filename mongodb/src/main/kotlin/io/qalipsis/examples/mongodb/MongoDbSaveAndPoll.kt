@@ -23,7 +23,7 @@ import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.ints.shouldBeExactly
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.immediately
+import io.qalipsis.api.executionprofile.immediate
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.innerJoin
@@ -55,7 +55,7 @@ class MongoDbSaveAndPoll {
         scenario {
             minionsCount = 20
             profile {
-                immediately()
+                immediate()
             }
         }.start()
             .jackson() // we start the jackson step to fetch data from the csv file. we will use the csvToObject method to map csv entries to list of utils.BatteryState object

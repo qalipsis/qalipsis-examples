@@ -23,7 +23,7 @@ import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.immediately
+import io.qalipsis.api.executionprofile.immediate
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.delay
 import io.qalipsis.api.steps.map
@@ -49,7 +49,7 @@ class ElasticsearchSaveAndSearch {
         scenario {
             minionsCount = 10
             profile {
-                immediately()
+                immediate()
             }
         }
             .start()

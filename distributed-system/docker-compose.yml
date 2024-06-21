@@ -137,7 +137,7 @@ services:
       - redpanda
 
   kafka-to-db:
-    image: aerisconsulting/qalipsis-demo-microservice:0.1.0
+    image: aerisconsulting/qalipsis-demo-microservice:0.1.1
     platform: linux/amd64
     environment:
       - KAFKA_ENABLED=true

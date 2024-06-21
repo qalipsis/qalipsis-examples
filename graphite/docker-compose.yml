@@ -7,11 +7,11 @@ services:
       - ./docker-config/conf/storage-schemas.conf:/opt/graphite/conf/storage-schemas.conf:ro
       - ./docker-config/conf/carbon.conf:/opt/graphite/conf/carbon.conf:ro
     ports:
-      - "8080:80"
+      - "8090:80"
       - "2003:2003"
       - "2004:2004"
     healthcheck:
-      test: nc -z localhost 80
+      test: wget --spider http://127.0.0.1/render
       interval: 5s
       timeout: 2s
       retries: 20

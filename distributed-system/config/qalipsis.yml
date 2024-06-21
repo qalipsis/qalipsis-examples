@@ -74,7 +74,7 @@ campaign:
   minions-count-per-scenario: 10000
   minions-factor: 1
   speed-factor: 1
-  start-offset-ms: 2000
+  start-offset-ms: 5000
   name: distributed-system-${random.shortuuid}
 
 http:
@@ -82,7 +82,7 @@ http:
     url: https://localhost:18443
   client:
     pool:
-      size: 20
+      size: 100
 
 kafka:
   bootstrap: localhost:19092
@@ -97,4 +97,4 @@ jdbc:
 report:
   export:
     console-live:
-      enabled: true
+      enabled: false

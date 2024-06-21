@@ -3,8 +3,3 @@ campaign:
   configuration:
     validation:
       max-execution-duration: PT40S
-
-report:
-  export:
-    console-live:
-      enabled: false

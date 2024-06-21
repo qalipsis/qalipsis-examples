@@ -22,7 +22,7 @@ import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.ints.shouldBeExactly
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.immediately
+import io.qalipsis.api.executionprofile.immediate
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.delay
 import io.qalipsis.api.steps.filterNotNull
@@ -52,7 +52,7 @@ class ElasticsearchSaveAndPoll {
         scenario {
             minionsCount = 10
             profile {
-                immediately()
+                immediate()
             }
         }
             .start()
