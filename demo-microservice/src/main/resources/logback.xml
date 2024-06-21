@@ -16,17 +16,38 @@
 
 <configuration>
 
-  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <withJansi>true</withJansi>
-    <!-- encoders are assigned the type
-         ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
-    <encoder>
-      <pattern>%cyan(%d{HH:mm:ss.SSS}) %gray([%thread]) %highlight(%-5level) %magenta(%logger{36}) - %msg%n
-      </pattern>
-    </encoder>
-  </appender>
+    <property name="LOG_FILE" value="./logs/demo-microservice.log"/>
+    <property name="FILE_LOG_PATTERN"
+              value="%d{yyyy-MM-dd'T'HH:mm:ss.SSS,UTC}Z %-5level - [%thread] %logger.%M.%L : %m%n"/>
 
-  <root level="info">
-    <appender-ref ref="STDOUT"/>
-  </root>
+    <appender class="ch.qos.logback.core.ConsoleAppender" name="console">
+        <withJansi>true</withJansi>
+        <encoder>
+            <charset>utf8</charset>
+            <pattern>%cyan(%d{HH:mm:ss.SSS}) %gray([%thread]) %highlight(%-5level) %magenta(%logger.%M.%L) - %msg%n
+            </pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <!-- Minimum logging level to be presented in the console logs-->
+            <level>INFO</level>
+        </filter>
+    </appender>
+    <appender name="flatfile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>./logs/demo-microservice.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>./logs/demo-microservice.log.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+            <maxFileSize>${LOG_FILE_MAX_SIZE:-30MB}</maxFileSize>
+            <maxHistory>${LOG_FILE_MAX_HISTORY:-3}</maxHistory>
+            <totalSizeCap>${LOG_FILE_TOTAL_SIZE_CAP:-100MB}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+            <charset>utf8</charset>
+        </encoder>
+    </appender>
+
+    <root level="WARN">
+        <appender-ref ref="console"/>
+        <appender-ref ref="flatfile"/>
+    </root>
 </configuration>

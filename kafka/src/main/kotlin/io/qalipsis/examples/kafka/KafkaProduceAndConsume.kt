@@ -19,7 +19,7 @@ package io.qalipsis.examples.kafka
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.immediately
+import io.qalipsis.api.executionprofile.immediate
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.filterNotNull
 import io.qalipsis.api.steps.innerJoin
@@ -49,7 +49,7 @@ class KafkaProduceAndConsume {
         scenario {
             minionsCount = 20
             profile {
-                immediately()
+                immediate()
             }
         }
             .start()

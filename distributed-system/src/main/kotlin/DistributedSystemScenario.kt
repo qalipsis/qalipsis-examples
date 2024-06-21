@@ -75,8 +75,12 @@ class DistributedSystemScenario(
         scenario {
             minionsCount = 100
             profile {
-                //immediately()
+                //immediate()
                 regular(periodMs = 500, minionsCountProLaunch = 100)
+                //stages {
+                //    stage(40.0, Duration.ofSeconds(15), Duration.ofSeconds(20))
+                //    stage(60.0, Duration.ofSeconds(10), Duration.ofSeconds(30))
+                //}
             }
         }
             .start()
@@ -100,9 +104,7 @@ class DistributedSystemScenario(
                 if (poolSize > 0) {
                     pool { size = poolSize }
                 }
-                monitoring {
-                    events = true
-                }
+                monitoring { all() }
                 request { ctx, deviceState ->
                     simple(HttpMethod.POST, "/data")
                         .body(
@@ -161,6 +163,7 @@ class DistributedSystemScenario(
                         }
                         query("""SELECT * FROM device_state order by "timestamp"""")
                         pollDelay(Duration.ofSeconds(1))
+                        monitoring { all() }
                     }.flatten()
             }
             .having { correlationRecord -> correlationRecord.value.value["device_id"] as? String }
@@ -229,6 +232,7 @@ class DistributedSystemScenario(
                         )
                         pollTimeout(pollTimeout = 1000)
                         offsetReset(offsetReset = OffsetResetStrategy.EARLIEST)
+                        monitoring { all() }
                     }.flatten(Serdes.ByteArray().deserializer(), jsonSerde<DeviceState>().deserializer())
             }
             .having { correlationRecord -> correlationRecord.value.record.value!!.deviceId }

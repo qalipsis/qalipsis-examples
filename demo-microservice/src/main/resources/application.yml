@@ -63,11 +63,7 @@ logger:
   levels:
     ROOT: ERROR
     io.micronaut.http.server.netty: ${NETTY_LOG_LEVEL:ERROR}
-    io.qalipsis.demo: INFO
-    io.micronaut.runtime: INFO
-    io.micronaut.configuration.kafka: INFO
-    io.micronaut.rabbitmq: INFO
-    #io.micronaut.context.condition: DEBUG
+    io.qalipsis.demo: DEBUG
 
 app:
   security:

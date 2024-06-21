@@ -90,7 +90,7 @@ Configure the scenario to execute with 10,000 minions, 100 of them starting ever
         scenario("quickstart-http") {
             minionsCount = 10_000
             rampUp {
-                immediately()
+                immediate()
             }
         }
         .start()

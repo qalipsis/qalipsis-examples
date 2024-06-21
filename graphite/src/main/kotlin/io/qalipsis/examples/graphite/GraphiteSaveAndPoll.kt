@@ -20,7 +20,7 @@ import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.ints.shouldBeExactly
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.immediately
+import io.qalipsis.api.executionprofile.immediate
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.delay
 import io.qalipsis.api.steps.filterNotNull
@@ -34,7 +34,6 @@ import io.qalipsis.plugins.graphite.poll.poll
 import io.qalipsis.plugins.graphite.save.save
 import io.qalipsis.plugins.graphite.search.GraphiteMetricsTime
 import io.qalipsis.plugins.graphite.search.GraphiteMetricsTimeUnit
-import io.qalipsis.plugins.graphite.search.GraphiteQuery
 import io.qalipsis.plugins.jackson.csv.csvToObject
 import io.qalipsis.plugins.jackson.jackson
 import java.time.Duration
@@ -55,7 +54,7 @@ class GraphiteSaveAndPoll {
         scenario {
             minionsCount = 20
             profile {
-                immediately()
+                immediate()
             }
         }
             .start()
@@ -113,7 +112,7 @@ class GraphiteSaveAndPoll {
                     name = "my-poll-step"
 
                     connect {
-                        server("http://localhost:8080")
+                        server("http://localhost:8090/render")
                     }
 
                     monitoring {
@@ -122,7 +121,7 @@ class GraphiteSaveAndPoll {
                     }
 
                     query {
-                        GraphiteQuery("device.battery-state.*")
+                        withTarget("device.battery-state.*")
                             // By default, Graphite provides only the latest 24 hours.
                             .from(GraphiteMetricsTime(-2, GraphiteMetricsTimeUnit.DAYS))
                             .noNullPoints(true)

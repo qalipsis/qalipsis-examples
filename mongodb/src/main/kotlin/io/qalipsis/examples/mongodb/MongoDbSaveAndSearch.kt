@@ -23,7 +23,7 @@ import io.kotest.assertions.asClue
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.ints.shouldBeExactly
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.immediately
+import io.qalipsis.api.executionprofile.immediate
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.verify
@@ -47,7 +47,7 @@ class MongoDbSaveAndSearch {
         scenario {
             minionsCount = 20
             profile {
-                immediately()
+                immediate()
             }
         }
             .start()
