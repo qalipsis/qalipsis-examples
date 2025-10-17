@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm")
     kotlin("kapt")
-    kotlin("plugin.allopen") version "1.8.21"
+    kotlin("plugin.allopen") version "1.9.20"
 
     id("io.micronaut.minimal.application") version "3.6.2"
     id("io.micronaut.graalvm") version "3.6.2"
@@ -28,7 +28,6 @@ allOpen {
 // Configure both compileKotlin and compileTestKotlin.
 tasks.withType<KotlinCompile>().configureEach {
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.majorVersion
         javaParameters = true
     }
 }
@@ -92,14 +91,6 @@ dependencies {
     }
 }
 
-application {
-    mainClass.set("io.qalipsis.demo.QalipsisDemoMicroserviceKt")
-}
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_17
-}
-
 graalvmNative.toolchainDetection.set(false)
 micronaut {
     runtime("netty")
@@ -125,12 +116,6 @@ micronaut {
 }
 
 tasks {
-    withType<KotlinCompile> {
-        kotlinOptions {
-            jvmTarget = JavaVersion.VERSION_17.majorVersion
-        }
-    }
-
     test {
         // JDK 16 enforces strong encapsulation of standard modules. In practice this mean overriding accessibility
         // modifiers in JDK classes (for example, privateMember.setAccessible(true)) is forbidden.
@@ -145,7 +130,7 @@ tasks {
         isZip64 = true
     }
 
-    val collectJars = create("collectJars") {
+    val collectJars = register("collectJars") {
         group = "build"
 
         doLast {
@@ -168,7 +153,7 @@ tasks {
 
 application {
     // Keep using mainClassName for ShadowJar.
-    mainClassName = "io.qalipsis.demo.QalipsisDemoMicroserviceKt"
+    mainClass.set("io.qalipsis.demo.QalipsisDemoMicroserviceKt")
     applicationDefaultJvmArgs = listOf("-noverify", "-Dcom.sun.management.jmxremote", "-Dmicronaut.env.deduction=false")
     this.ext["workingDir"] = projectDir
 }

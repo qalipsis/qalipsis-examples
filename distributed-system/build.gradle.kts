@@ -30,6 +30,7 @@ qalipsis {
         apacheKafka()
         netty()
         r2dbcJasync()
+        timescaleDb()
         elasticsearch()
         influxDb()
     }
@@ -59,6 +60,9 @@ tasks {
             "report.export.junit.enabled" to "true",
             "report.export.junit.folder" to project.layout.buildDirectory.dir("test-results").get().asFile.path
         )
+
+        dependsOn("dockerComposeUp")
+        finalizedBy("dockerComposeDown")
     }
 
     named("check") {
@@ -80,14 +84,3 @@ application {
 
 val shadowJarName = "examples-${project.name}-${project.version}-qalipsis.jar"
 /** End of the configuration for the shadow plugin. **/
-
-/** Start of the configuration to set up the testing environment **/
-tasks {
-    withType<RunQalipsis> {
-        dependsOn("dockerComposeUp")
-    }
-    named("check") {
-        finalizedBy("dockerComposeDown")
-    }
-}
-/** End of the configuration to set up the testing environment **/

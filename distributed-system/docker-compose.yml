@@ -19,7 +19,7 @@ services:
 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.17.21
-    restart: always
+    restart: on-failure:6
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     ports:
@@ -80,8 +80,8 @@ services:
       timeout: 2s
       retries: 20
       start_period: 10s
-  console:
-    container_name: redpanda-console
+
+  redpanda-console:
     image: docker.redpanda.com/redpandadata/console:v2.5.2
     entrypoint: /bin/sh
     command: -c 'echo "$$CONSOLE_CONFIG_FILE" > /tmp/config.yml; /app/console'
@@ -97,6 +97,7 @@ services:
           adminApi:
             enabled: true
             urls: ["http://redpanda:9644"]
+    restart: on-failure:6
     ports:
       - 28080:8080
     healthcheck:
@@ -117,9 +118,26 @@ services:
       POSTGRES_PASSWORD: qalipsis
       POSTGRES_DB: qalipsis
     volumes:
+      - ./config/timescale/init/999_create_schemas.sh:/docker-entrypoint-initdb.d/999_create_schemas.sh
       - timescale-volume:/var/lib/postgresql/data
     ports:
       - "25432:5432"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      PGADMIN_DEFAULT_EMAIL: qalipsis@qalipsis.com
+      PGADMIN_DEFAULT_PASSWORD: "qalipsis"
+    volumes:
+      - ./config/pgadmin/servers.json:/pgadmin4/servers.json
+      - ./volumes/pgadmin/backup:/backup
+    ports:
+      - "25433:80"
+    depends_on:
+      - timescale
 
   http-to-kafka:
     image: aerisconsulting/http-to-kafka
@@ -139,6 +157,7 @@ services:
   kafka-to-db:
     image: aerisconsulting/qalipsis-demo-microservice:0.1.1
     platform: linux/amd64
+    restart: on-failure:6
     environment:
       - KAFKA_ENABLED=true
       - MESSAGING_KAFKA_LISTENER_ENABLED=true
@@ -193,7 +212,7 @@ services:
         condition: service_healthy
       redpanda:
         condition: service_healthy
-      console:
+      redpanda-console:
         condition: service_healthy
 
 volumes:

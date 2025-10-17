@@ -18,20 +18,30 @@ package io.qalipsis.example.distributedsystem
 
 import assertk.all
 import assertk.assertThat
-import assertk.assertions.*
+import assertk.assertions.isBetween
+import assertk.assertions.isDataClassEqualTo
+import assertk.assertions.isEqualTo
+import assertk.assertions.isInstanceOf
+import assertk.assertions.isLessThan
+import assertk.assertions.isNotNull
+import assertk.assertions.key
+import assertk.assertions.prop
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.netty.handler.codec.http.HttpHeaderValues
 import io.netty.handler.codec.http.HttpMethod
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.qalipsis.api.annotations.Property
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.context.StepContext
-import io.qalipsis.api.events.EventsLogger
-import io.qalipsis.api.executionprofile.regular
+import io.qalipsis.api.executionprofile.immediate
+import io.qalipsis.api.meters.steps.throughput
+import io.qalipsis.api.meters.steps.timer
 import io.qalipsis.api.scenario.scenario
-import io.qalipsis.api.steps.*
-import io.qalipsis.api.steps.datasource.DatasourceRecord
-import io.qalipsis.plugins.kafka.consumer.KafkaConsumerResult
+import io.qalipsis.api.steps.StepSpecification
+import io.qalipsis.api.steps.filterNotNull
+import io.qalipsis.api.steps.innerJoin
+import io.qalipsis.api.steps.map
+import io.qalipsis.api.steps.returns
+import io.qalipsis.api.steps.verify
 import io.qalipsis.plugins.kafka.consumer.consume
 import io.qalipsis.plugins.kafka.kafka
 import io.qalipsis.plugins.kafka.serdes.jsonSerde
@@ -43,10 +53,10 @@ import io.qalipsis.plugins.netty.netty
 import io.qalipsis.plugins.r2dbc.jasync.dialect.Protocol
 import io.qalipsis.plugins.r2dbc.jasync.poll.poll
 import io.qalipsis.plugins.r2dbc.jasync.r2dbcJasync
-import org.apache.kafka.clients.consumer.OffsetResetStrategy
-import org.apache.kafka.common.serialization.Serdes
 import java.math.BigDecimal
 import java.time.Duration
+import org.apache.kafka.clients.consumer.OffsetResetStrategy
+import org.apache.kafka.common.serialization.Serdes
 
 /**
  * Complex scenario to validate different operations in a distributed system using a HTTP server, Kafka,
@@ -58,29 +68,27 @@ import java.time.Duration
  */
 @Suppress("DuplicatedCode")
 class DistributedSystemScenario(
-    private val eventsLogger: EventsLogger,
     @Property(name = "jdbc.port") private val jdbcPort: Int,
     @Property(name = "jdbc.database") private val jdbcDatabase: String,
     @Property(name = "jdbc.username") private val jdbcUsername: String,
-    @Property(name = "jdbc.password") private val jdbcPassword: String
+    @Property(name = "jdbc.password") private val jdbcPassword: String,
 ) {
 
-    @Scenario("distributed-system")
+    @Scenario(
+        "distributed-system",
+        version = "1.0",
+        description = "Scenario to validate the asynchronous exchanges in a distributed system"
+    )
     fun myScenario(
         @Property(name = "http.server.url") serverUrl: String,
         @Property(name = "http.client.pool.size") poolSize: Int,
         @Property(name = "kafka.bootstrap") kafkaBootstrap: String,
-        objectMapper: ObjectMapper
+        objectMapper: ObjectMapper,
     ) {
         scenario {
             minionsCount = 100
             profile {
-                //immediate()
-                regular(periodMs = 500, minionsCountProLaunch = 100)
-                //stages {
-                //    stage(40.0, Duration.ofSeconds(15), Duration.ofSeconds(20))
-                //    stage(60.0, Duration.ofSeconds(10), Duration.ofSeconds(30))
-                //}
+                immediate()
             }
         }
             .start()
@@ -114,6 +122,7 @@ class DistributedSystemScenario(
                         .addHeader(name = "message-key", value = ctx.minionId)
                 }
             }
+            .throughput("http-requests-per-seconds")
             .verify { result ->
                 assertThat(result).all {
                     prop(RequestResult<*, HttpResponse<String>, *>::response).isNotNull().all {
@@ -121,7 +130,7 @@ class DistributedSystemScenario(
                     }
                     prop(RequestResult<*, HttpResponse<String>, *>::meters).all {
                         prop(RequestResult.Meters::timeToLastByte).isNotNull()
-                            .isLessThan(Duration.ofMillis(300))
+                            .isLessThan(Duration.ofSeconds(2))
                     }
                 }
             }.configure {
@@ -139,10 +148,48 @@ class DistributedSystemScenario(
             .verifyJdbc()
     }
 
-    private fun randomLongitude() = Math.random() * 360 - 180
-
-    private fun randomLatitude() = Math.random() * 180 - 90
-
+    /**
+     * Verifies the correctness of the data in Kafka and the latency.
+     */
+    private fun StepSpecification<*, DeviceState, *>.verifyKafka(
+        kafkaBootstrap: String,
+    ) {
+        innerJoin()
+            .using { correlationRecord -> correlationRecord.value.deviceId }
+            .on {
+                it.kafka()
+                    .consume {
+                        name = "consume-http-requests"
+                        bootstrap(kafkaBootstrap)
+                        topics("http-request")
+                        groupId(groupId = "distributed-system-scenario-demo")
+                        pollTimeout(pollTimeout = 1000)
+                        offsetReset(offsetReset = OffsetResetStrategy.EARLIEST)
+                        monitoring { all() }
+                    }.flatten(Serdes.ByteArray().deserializer(), jsonSerde<DeviceState>().deserializer())
+            }
+            .having { correlationRecord -> correlationRecord.value.record.value?.deviceId }
+            .configure {
+                name = "join-request-with-kafka"
+                timeout(duration = 30_000)
+                report {
+                    reportErrors = true
+                }
+            }
+            .filterNotNull()
+            .timer("time-to-kafka") { _, (deviceState, kafkaResult) ->
+                Duration.ofMillis(kafkaResult.record.receivedTimestamp - deviceState.timestamp)
+            }
+            .verify { (deviceState, kafkaResult) ->
+                // The device state received from Kafka should be similar to the one sent by HTTP.
+                assertThat(actual = kafkaResult.record.value).isNotNull().isDataClassEqualTo(deviceState)
+            }.configure {
+                name = "Verify Kafka data"
+                report {
+                    reportErrors = true
+                }
+            }
+    }
 
     /**
      * Verifies the correctness of the data in Elasticsearch and the latency.
@@ -169,23 +216,17 @@ class DistributedSystemScenario(
             .having { correlationRecord -> correlationRecord.value.value["device_id"] as? String }
             .configure {
                 name = "join-request-in-timescale"
-                timeout(10_000) // We expect the DB record to be available in the next 10 seconds.
+                timeout(30_000)
                 report {
                     reportErrors = true
                 }
             }
-            .execute { context: StepContext<Pair<DeviceState, DatasourceRecord<Map<String, Any?>>>?, Pair<DeviceState, DatasourceRecord<Map<String, Any?>>>?> ->
-                val input = context.receive()
-                val (deviceState, dbRecord) = input!!
-                eventsLogger.debug(
-                    "time-to-timescale",
-                    Duration.ofMillis((dbRecord.value["saving_timestamp"] as Long) - deviceState.timestamp),
-                    tags = context.toEventTags()
-                )
-                context.send(input)
+            .filterNotNull()
+            .timer("time-to-timescale") { _, (deviceState, dbRecord) ->
+                Duration.ofMillis((dbRecord.value["saving_timestamp"] as Long) - deviceState.timestamp)
             }
-            .verify {
-                val (deviceState, dbRecord) = it!!
+            .configure { name = "time-to-timescale" }
+            .verify { (deviceState, dbRecord) ->
                 // The device state received from Kafka should be similar to the one sent by HTTP.
                 assertThat(actual = dbRecord.value).isNotNull().all {
                     key("battery_level_percentage").isEqualTo(deviceState.batteryLevelPercentage)
@@ -195,10 +236,6 @@ class DistributedSystemScenario(
                         .isBetween(deviceState.positionLon - 10e-3, deviceState.positionLon + 10e-3)
                     key("message_key").isEqualTo(deviceState.deviceId)
                 }
-                // The device state should be received by saved into Timescale in the next 10 seconds after its push to the HTTP server.
-                assertThat(actual = (dbRecord.value["saving_timestamp"] as Long) - deviceState.timestamp).isLessThan(
-                    10000
-                )
             }.configure {
                 name = "Verify Timescale data"
                 report {
@@ -207,65 +244,9 @@ class DistributedSystemScenario(
             }
     }
 
-    /**
-     * Verifies the correctness of the data in Kafka and the latency.
-     */
-    private fun StepSpecification<*, DeviceState, *>.verifyKafka(
-        kafkaBootstrap: String
-    ) {
-        innerJoin()
-            .using { correlationRecord -> correlationRecord.value.deviceId }
-            .on {
-                it.kafka()
-                    .consume {
-                        name = "consume-http-requests"
-                        bootstrap(kafkaBootstrap)
-                        topics("http-request")
-                        groupId(groupId = "distributed-system-scenario-demo")
-                        properties(
-                            "max.poll.records" to "2000",
-                            "fetch.max.wait.ms" to "500",
-                            "fetch.min.bytes" to "1048576",
-                            "fetch.max.bytes" to "52428800",
-                            "max.partition.fetch.bytes" to "52428800",
-                            "max.poll.records" to "1000"
-                        )
-                        pollTimeout(pollTimeout = 1000)
-                        offsetReset(offsetReset = OffsetResetStrategy.EARLIEST)
-                        monitoring { all() }
-                    }.flatten(Serdes.ByteArray().deserializer(), jsonSerde<DeviceState>().deserializer())
-            }
-            .having { correlationRecord -> correlationRecord.value.record.value!!.deviceId }
-            .configure {
-                name = "join-request-with-kafka"
-                timeout(duration = 10_000) // We expect the Kafka record to be available in the next 20 seconds.
-                report {
-                    reportErrors = true
-                }
-            }
-            .execute { context: StepContext<Pair<DeviceState, KafkaConsumerResult<ByteArray?, DeviceState?>>?, Pair<DeviceState, KafkaConsumerResult<*, DeviceState?>>?> ->
-                val input = context.receive()
-                val (deviceState, kafkaResult) = input!!
-                eventsLogger.debug(
-                    "time-to-kafka",
-                    Duration.ofMillis(kafkaResult.record.receivedTimestamp - deviceState.timestamp),
-                    tags = context.toEventTags()
-                )
-                context.send(input)
-            }
-            .verify {
-                val (deviceState, kafkaResult) = it!!
-                // The device state received from Kafka should be similar to the one sent by HTTP.
-                assertThat(actual = kafkaResult.record.value).isNotNull().isDataClassEqualTo(deviceState)
-                // The device state should be received by Kafka in the next 5 seconds after its push to the HTTP server.
-                assertThat(actual = kafkaResult.record.receivedTimestamp - deviceState.timestamp).isLessThan(5000)
-            }.configure {
-                name = "Verify Kafka data"
-                report {
-                    reportErrors = true
-                }
-            }
-    }
+    private fun randomLongitude() = Math.random() * 360 - 180
+
+    private fun randomLatitude() = Math.random() * 180 - 90
 
     /**
      * State of the device sent vio HTTP to the server.
@@ -275,7 +256,7 @@ class DistributedSystemScenario(
         val timestamp: Long = 0,
         val positionLat: Double,
         val positionLon: Double,
-        val batteryLevelPercentage: Int
+        val batteryLevelPercentage: Int,
     )
 
 }

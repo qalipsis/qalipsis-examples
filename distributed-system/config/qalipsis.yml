@@ -2,17 +2,24 @@ logging:
   console: false
   root: WARN
   level:
-    events: TRACE
+    events: 'OFF'
     io.qalipsis.example: ERROR
-    io:
-      qalipsis:
-        core:
-          factories:
-            orchestration: ERROR
-        plugins:
-          r2dbc:
-            jasync:
-              poll: DEBUG
+    'org.elasticsearch.client.RestClient': ERROR
+
+datasource:
+  host: localhost
+  port: 25432
+  database: qalipsis
+  schema: qalipsis
+  username: qalipsis_demo
+  password: qalipsis
+
+liquibase:
+  enabled: false
+  datasources:
+    default:
+      liquibase-schema: qalipsis_liquibase
+
 
 # For the executors:
 # - 0 or less means the Kotlin Global Scope
@@ -29,6 +36,7 @@ executors:
 meters:
   export:
     enabled: true
+    campaign-step: PT5S
     elasticsearch:
       hosts: http://localhost:9200
       enabled: true
@@ -43,10 +51,29 @@ meters:
       prefix: qalipsis
       user-name: qalipsis
       password: qalipsis
+    timescaledb:
+      enabled: true
+      host: localhost
+      port: 25432
+      database: qalipsis
+      schema: meters
+      username: qalipsis_demo
+      password: qalipsis
+  provider:
+    timescaledb:
+      enabled: true
+      host: localhost
+      port: 25432
+      database: qalipsis
+      schema: meters
+      username: qalipsis_demo
+      password: qalipsis
+      init-schema: true
 
 events:
   root: TRACE
   export:
+    enabled: true
     elasticsearch:
       enabled: true
       urls: http://localhost:9200
@@ -65,16 +92,23 @@ events:
       password: qalipsis
       org: qalipsis
       bucket: iot
-
+    timescaledb:
+      enabled: true
+      host: localhost
+      port: 25432
+      database: qalipsis
+      schema: events
+      username: qalipsis_demo
+      password: qalipsis
     slf4j:
       enabled: false
       min-level: trace
 
 campaign:
-  minions-count-per-scenario: 10000
+  minions-count-per-scenario: 1000
   minions-factor: 1
   speed-factor: 1
-  start-offset-ms: 5000
+  start-offset: 2000ms
   name: distributed-system-${random.shortuuid}
 
 http:
@@ -82,7 +116,7 @@ http:
     url: https://localhost:18443
   client:
     pool:
-      size: 100
+      size: 20
 
 kafka:
   bootstrap: localhost:19092

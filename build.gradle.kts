@@ -20,7 +20,7 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
 import org.gradle.api.tasks.testing.logging.TestLogEvent.STANDARD_ERROR
 
 plugins {
-    id("io.qalipsis.bootstrap") version "0.1.1"
+    id("io.qalipsis.bootstrap") version "0.1.3"
 
     id("nebula.maven-publish") version "18.4.0"
     id("com.palantir.docker") version "0.36.0" apply false
@@ -42,14 +42,9 @@ licenseReport {
 
 description = "QALIPSIS Examples"
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-}
-
 tasks.withType<Wrapper> {
     distributionType = Wrapper.DistributionType.BIN
-    gradleVersion = "7.2"
+    gradleVersion = "8.5"
 }
 
 allprojects {
@@ -63,14 +58,9 @@ allprojects {
         mavenLocal()
         mavenCentral()
         maven {
-            name = "maven-central-snapshots"
-            setUrl("https://oss.sonatype.org/content/repositories/snapshots")
+            name = "qalipsis-snapshots"
+            setUrl("https://maven.qalipsis.com/repository/oss-snapshots")
         }
-    }
-
-    java {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
     }
 
     val ossrhUsername: String? by project
