@@ -28,7 +28,7 @@ description = "Qalipsis Demo - Testing a HTTP server"
 
 qalipsis {
     plugins {
-        netty()
+        http()
         jackson()
     }
 }

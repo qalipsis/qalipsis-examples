@@ -1,0 +1,173 @@
+{ { - if .Values.nginx.enabled } }
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: { { include "qalipsis.fullname" . } }-nginx
+  labels:
+    {{- include "qalipsis.labels" . | nindent 4 }}
+    {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "nginx") | nindent 4 }}
+data:
+  nginx.conf: |
+    worker_processes auto;
+    error_log /var/log/nginx/error.log warn;
+    pid /tmp/nginx.pid;
+
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        include       /etc/nginx/mime.types;
+        default_type  application/octet-stream;
+
+        log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                        '$status $body_bytes_sent "$http_referer" '
+                        '"$http_user_agent" "$http_x_forwarded_for"';
+        access_log /var/log/nginx/access.log main;
+
+        sendfile        on;
+        keepalive_timeout 65;
+
+        # Increase buffer sizes for proxied responses
+        proxy_buffer_size       128k;
+        proxy_buffers           4 256k;
+        proxy_busy_buffers_size 256k;
+
+        map $http_upgrade $connection_upgrade {
+            default upgrade;
+            ''      close;
+        }
+
+        {{- if .Values.kibana.enabled }}
+        # Kibana - http://<nginx>/kibana/
+        upstream kibana {
+            server {{ include "qalipsis.fullname" . }}-kibana:{{ .Values.kibana.service.port }};
+        }
+        {{- end }}
+
+        {{- if .Values.elasticsearch.enabled }}
+        # Elasticsearch - http://<nginx>/elasticsearch/
+        upstream elasticsearch {
+            server {{ include "qalipsis.fullname" . }}-elasticsearch:{{ .Values.elasticsearch.service.port }};
+        }
+        {{- end }}
+
+        {{- if .Values.influxdb.enabled }}
+        # InfluxDB - http://<nginx>/influxdb/
+        upstream influxdb {
+            server {{ include "qalipsis.fullname" . }}-influxdb:{{ .Values.influxdb.service.port }};
+        }
+        {{- end }}
+
+        {{- if .Values.redpandaConsole.enabled }}
+        # Redpanda Console - http://<nginx>/redpanda-console/
+        upstream redpanda-console {
+            server {{ include "qalipsis.fullname" . }}-redpanda-console:{{ .Values.redpandaConsole.service.port }};
+        }
+        {{- end }}
+
+        {{- if .Values.httpToKafka.enabled }}
+        # HTTP-to-Kafka - http://<nginx>/http-to-kafka/
+        upstream http-to-kafka {
+            server {{ include "qalipsis.fullname" . }}-http-to-kafka:{{ .Values.httpToKafka.service.httpPort }};
+        }
+        {{- end }}
+
+        server {
+            listen 80;
+            server_name _;
+
+            # Health check endpoint for the proxy itself
+            location /healthz {
+                access_log off;
+                return 200 'ok';
+                add_header Content-Type text/plain;
+            }
+
+            # Landing page listing available services
+            location = / {
+                default_type text/html;
+                return 200 '<!DOCTYPE html>
+                <html><head><title>QALIPSIS Services</title></head>
+                <body>
+                <h1>QALIPSIS Distributed System</h1>
+                <ul>
+                {{- if .Values.kibana.enabled }}
+                <li><a href="/kibana/">Kibana</a></li>
+                {{- end }}
+                {{- if .Values.elasticsearch.enabled }}
+                <li><a href="/elasticsearch/">Elasticsearch</a></li>
+                {{- end }}
+                {{- if .Values.influxdb.enabled }}
+                <li><a href="/influxdb/">InfluxDB</a></li>
+                {{- end }}
+                {{- if .Values.redpandaConsole.enabled }}
+                <li><a href="/redpanda-console/">Redpanda Console</a></li>
+                {{- end }}
+                {{- if .Values.httpToKafka.enabled }}
+                <li><a href="/http-to-kafka/">HTTP-to-Kafka</a></li>
+                {{- end }}
+                </ul>
+                </body></html>';
+            }
+
+            {{- if .Values.kibana.enabled }}
+            location /kibana/ {
+                proxy_pass http://kibana/;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                # WebSocket support for Kibana
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection $connection_upgrade;
+            }
+            {{- end }}
+
+            {{- if .Values.elasticsearch.enabled }}
+            location /elasticsearch/ {
+                proxy_pass http://elasticsearch/;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+            {{- end }}
+
+            {{- if .Values.influxdb.enabled }}
+            location /influxdb/ {
+                proxy_pass http://influxdb/;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+            {{- end }}
+
+            {{- if .Values.redpandaConsole.enabled }}
+            location /redpanda-console/ {
+                proxy_pass http://redpanda-console/;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                # WebSocket support for console live updates
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection $connection_upgrade;
+            }
+            {{- end }}
+
+            {{- if .Values.httpToKafka.enabled }}
+            location /http-to-kafka/ {
+                proxy_pass http://http-to-kafka/;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+            {{- end }}
+        }
+    }
+  { { - end } }

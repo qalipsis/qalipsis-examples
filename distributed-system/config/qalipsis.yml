@@ -2,8 +2,8 @@ logging:
   console: false
   root: WARN
   level:
-    events: 'OFF'
-    io.qalipsis.example: ERROR
+    events: 'INFO'
+    io.qalipsis: 'INFO'
     'org.elasticsearch.client.RestClient': ERROR
 
 datasource:
@@ -15,7 +15,7 @@ datasource:
   password: qalipsis
 
 liquibase:
-  enabled: false
+  enabled: true
   datasources:
     default:
       liquibase-schema: qalipsis_liquibase
@@ -36,7 +36,7 @@ executors:
 meters:
   export:
     enabled: true
-    campaign-step: PT5S
+    campaign-step: PT2S
     elasticsearch:
       hosts: http://localhost:9200
       enabled: true
@@ -61,7 +61,7 @@ meters:
       password: qalipsis
   provider:
     timescaledb:
-      enabled: true
+      enabled: false
       host: localhost
       port: 25432
       database: qalipsis
@@ -131,4 +131,4 @@ jdbc:
 report:
   export:
     console-live:
-      enabled: false
+      enabled: true

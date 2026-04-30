@@ -13,6 +13,12 @@
  * or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
+pluginManagement {
+    repositories {
+        mavenLocal()
+        gradlePluginPortal()
+    }
+}
 
 rootProject.name = "qalipsis-examples"
 
@@ -34,5 +40,6 @@ include(
     "netty-mqtt",
     "netty-tcp",
     "jakarta-ee-messaging",
-    "graphite"
+    "graphite",
+    "sql",
 )

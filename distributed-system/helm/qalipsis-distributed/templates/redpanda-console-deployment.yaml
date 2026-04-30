@@ -1,0 +1,64 @@
+{ { - if .Values.redpandaConsole.enabled } }
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: { { include "qalipsis.fullname" . } }-redpanda-console
+  labels:
+    {{- include "qalipsis.labels" . | nindent 4 }}
+    {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "redpanda-console") | nindent 4 }}
+spec:
+  replicas: { { .Values.redpandaConsole.replicas } }
+  selector:
+    matchLabels:
+      { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "redpanda-console") | nindent 6 } }
+  template:
+    metadata:
+      labels:
+        { { - include "qalipsis.labels" . | nindent 8 } }
+          { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "redpanda-console") | nindent 8 } }
+    spec:
+      initContainers:
+        - name: wait-for-redpanda
+          image: busybox:1.36
+          command: [ 'sh', '-c', 'until nc -z {{ include "qalipsis.fullname" . }}-redpanda {{ .Values.redpanda.service.kafkaPort }}; do echo waiting for redpanda; sleep 2; done' ]
+      containers:
+        - name: redpanda-console
+          image: "{{ .Values.redpandaConsole.image.repository }}:{{ .Values.redpandaConsole.image.tag }}"
+          command: [ "/bin/sh" ]
+          args: [ "-c", "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/console" ]
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: CONFIG_FILEPATH
+              value: /tmp/config.yml
+            - name: CONSOLE_CONFIG_FILE
+              value: |
+                kafka:
+                  brokers: ["{{ include "qalipsis.fullname" . }}-redpanda:{{ .Values.redpanda.service.kafkaPort }}"]
+                  schemaRegistry:
+                    enabled: true
+                    urls: ["http://{{ include "qalipsis.fullname" . }}-redpanda:{{ .Values.redpanda.service.schemaRegistryPort }}"]
+                redpanda:
+                  adminApi:
+                    enabled: true
+                    urls: ["http://{{ include "qalipsis.fullname" . }}-redpanda:{{ .Values.redpanda.service.adminPort }}"]
+          resources:
+            { { - toYaml .Values.redpandaConsole.resources | nindent 12 } }
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 20
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 5
+  { { - end } }

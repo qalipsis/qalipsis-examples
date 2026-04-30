@@ -1,0 +1,88 @@
+{ { - if .Values.redpanda.enabled } }
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: { { include "qalipsis.fullname" . } }-redpanda
+  labels:
+    {{- include "qalipsis.labels" . | nindent 4 }}
+    {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "redpanda") | nindent 4 }}
+spec:
+  serviceName: { { include "qalipsis.fullname" . } }-redpanda
+  replicas: { { .Values.redpanda.replicas } }
+  selector:
+    matchLabels:
+      { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "redpanda") | nindent 6 } }
+  template:
+    metadata:
+      labels:
+        { { - include "qalipsis.labels" . | nindent 8 } }
+          { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "redpanda") | nindent 8 } }
+    spec:
+      containers:
+        - name: redpanda
+          image: "{{ .Values.redpanda.image.repository }}:{{ .Values.redpanda.image.tag }}"
+          command:
+            - redpanda
+            - start
+            - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+            - --advertise-kafka-addr internal://{{ include "qalipsis.fullname" . }}-redpanda:9092,external://localhost:19092
+            - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+            - --advertise-pandaproxy-addr internal://{{ include "qalipsis.fullname" . }}-redpanda:8082,external://localhost:18082
+            - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+            - --rpc-addr {{ include "qalipsis.fullname" . }}-redpanda:33145
+            - --advertise-rpc-addr {{ include "qalipsis.fullname" . }}-redpanda:33145
+            - --mode dev-container
+            - --smp 1
+            - --default-log-level=info
+          ports:
+            - containerPort: 9092
+              name: kafka
+            - containerPort: 8081
+              name: schema-registry
+            - containerPort: 8082
+              name: pandaproxy
+            - containerPort: 9644
+              name: admin
+            - containerPort: 19092
+              name: kafka-ext
+            - containerPort: 18081
+              name: schema-ext
+            - containerPort: 18082
+              name: proxy-ext
+            - containerPort: 33145
+              name: rpc
+          resources:
+            { { - toYaml .Values.redpanda.resources | nindent 12 } }
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 9644
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 20
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 9644
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 5
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/redpanda/data
+  volumeClaimTemplates:
+    { { - if .Values.redpanda.persistence.enabled } }
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: { { .Values.redpanda.persistence.size } }
+        { { - if .Values.redpanda.persistence.storageClass } }
+        storageClassName: { { .Values.redpanda.persistence.storageClass } }
+        { { - end } }
+    { { - end } }
+  { { - end } }

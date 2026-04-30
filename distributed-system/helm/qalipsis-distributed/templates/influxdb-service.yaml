@@ -1,0 +1,18 @@
+{ { - if .Values.influxdb.enabled } }
+apiVersion: v1
+kind: Service
+metadata:
+  name: { { include "qalipsis.fullname" . } }-influxdb
+  labels:
+    {{- include "qalipsis.labels" . | nindent 4 }}
+    {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "influxdb") | nindent 4 }}
+spec:
+  type: { { .Values.influxdb.service.type } }
+  ports:
+    - port: { { .Values.influxdb.service.port } }
+      targetPort: 8086
+      protocol: TCP
+      name: http
+  selector:
+    { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "influxdb") | nindent 4 } }
+  { { - end } }

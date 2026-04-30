@@ -1,0 +1,51 @@
+{ { - if .Values.kibana.enabled } }
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: { { include "qalipsis.fullname" . } }-kibana
+  labels:
+    {{- include "qalipsis.labels" . | nindent 4 }}
+    {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "kibana") | nindent 4 }}
+spec:
+  replicas: { { .Values.kibana.replicas } }
+  selector:
+    matchLabels:
+      { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "kibana") | nindent 6 } }
+  template:
+    metadata:
+      labels:
+        { { - include "qalipsis.labels" . | nindent 8 } }
+          { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "kibana") | nindent 8 } }
+    spec:
+      initContainers:
+        - name: wait-for-elasticsearch
+          image: busybox:1.36
+          command: [ 'sh', '-c', 'until nc -z {{ include "qalipsis.fullname" . }}-elasticsearch {{ .Values.elasticsearch.service.port }}; do echo waiting for elasticsearch; sleep 2; done' ]
+      containers:
+        - name: kibana
+          image: "{{ .Values.kibana.image.repository }}:{{ .Values.kibana.image.tag }}"
+          ports:
+            - containerPort: 5601
+              name: http
+          env:
+            - name: ELASTICSEARCH_HOSTS
+              value: "http://{{ include "qalipsis.fullname" . }}-elasticsearch:{{ .Values.elasticsearch.service.port }}"
+          resources:
+            { { - toYaml .Values.kibana.resources | nindent 12 } }
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5601
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 20
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5601
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 5
+  { { - end } }

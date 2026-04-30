@@ -1,0 +1,18 @@
+{ { - if .Values.redpandaConsole.enabled } }
+apiVersion: v1
+kind: Service
+metadata:
+  name: { { include "qalipsis.fullname" . } }-redpanda-console
+  labels:
+    {{- include "qalipsis.labels" . | nindent 4 }}
+    {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "redpanda-console") | nindent 4 }}
+spec:
+  type: { { .Values.redpandaConsole.service.type } }
+  ports:
+    - port: { { .Values.redpandaConsole.service.port } }
+      targetPort: 8080
+      protocol: TCP
+      name: http
+  selector:
+    { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "redpanda-console") | nindent 4 } }
+  { { - end } }

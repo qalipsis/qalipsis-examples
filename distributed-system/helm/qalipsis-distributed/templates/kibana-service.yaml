@@ -1,0 +1,18 @@
+{ { - if .Values.kibana.enabled } }
+apiVersion: v1
+kind: Service
+metadata:
+  name: { { include "qalipsis.fullname" . } }-kibana
+  labels:
+    {{- include "qalipsis.labels" . | nindent 4 }}
+    {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "kibana") | nindent 4 }}
+spec:
+  type: { { .Values.kibana.service.type } }
+  ports:
+    - port: { { .Values.kibana.service.port } }
+      targetPort: 5601
+      protocol: TCP
+      name: http
+  selector:
+    { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "kibana") | nindent 4 } }
+  { { - end } }

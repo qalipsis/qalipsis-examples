@@ -29,7 +29,8 @@ qalipsis {
     plugins {
         apacheKafka()
         netty()
-        r2dbcJasync()
+        //r2dbcJasync()
+        sql()
         timescaleDb()
         elasticsearch()
         influxDb()
@@ -68,14 +69,26 @@ tasks {
     named("check") {
         dependsOn("runDistributedSystemDemo")
     }
-}
 
-/** Beginning of the configuration for the shadow plugin. **/
-tasks {
     withType<ShadowJar> {
         isZip64 = true
     }
+
+    register<JavaExec>("runQalipsisWithGui") {
+        group = "qalipsis"
+        description = "Starts QALIPSIS standalone with the GUI, for PostgreSQL"
+        mainClass.set("io.qalipsis.runtime.Qalipsis")
+        maxHeapSize = "2G"
+        args(
+            "--persistent",
+            "--gui",
+            "-e", "api-documentation"
+        )
+        classpath = sourceSets["main"].runtimeClasspath
+        workingDir = projectDir
+    }
 }
+
 
 application {
     mainClass.set("io.qalipsis.runtime.Qalipsis")

@@ -1,0 +1,54 @@
+{ { - if .Values.nginx.enabled } }
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: { { include "qalipsis.fullname" . } }-nginx
+  labels:
+    {{- include "qalipsis.labels" . | nindent 4 }}
+    {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "nginx") | nindent 4 }}
+spec:
+  replicas: { { .Values.nginx.replicas } }
+  selector:
+    matchLabels:
+      { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "nginx") | nindent 6 } }
+  template:
+    metadata:
+      labels:
+        { { - include "qalipsis.labels" . | nindent 8 } }
+          { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "nginx") | nindent 8 } }
+      annotations:
+        checksum/config: { { include (print $.Template.BasePath "/nginx-configmap.yaml") . | sha256sum } }
+    spec:
+      containers:
+        - name: nginx
+          image: "{{ .Values.nginx.image.repository }}:{{ .Values.nginx.image.tag }}"
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            { { - toYaml .Values.nginx.resources | nindent 12 } }
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: { { include "qalipsis.fullname" . } }-nginx
+  { { - end } }

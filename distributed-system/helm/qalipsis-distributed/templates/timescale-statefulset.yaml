@@ -1,0 +1,75 @@
+{ { - if .Values.timescale.enabled } }
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: { { include "qalipsis.fullname" . } }-timescale
+  labels:
+    {{- include "qalipsis.labels" . | nindent 4 }}
+    {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "timescale") | nindent 4 }}
+spec:
+  serviceName: { { include "qalipsis.fullname" . } }-timescale
+  replicas: { { .Values.timescale.replicas } }
+  selector:
+    matchLabels:
+      { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "timescale") | nindent 6 } }
+  template:
+    metadata:
+      labels:
+        { { - include "qalipsis.labels" . | nindent 8 } }
+          { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "timescale") | nindent 8 } }
+    spec:
+      containers:
+        - name: timescale
+          image: "{{ .Values.timescale.image.repository }}:{{ .Values.timescale.image.tag }}"
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_USER
+              value: { { .Values.timescale.postgres.user | quote } }
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: { { include "qalipsis.fullname" . } }-timescale
+                  key: postgres-password
+            - name: POSTGRES_DB
+              value: { { .Values.timescale.postgres.database | quote } }
+          resources:
+            { { - toYaml .Values.timescale.resources | nindent 12 } }
+          readinessProbe:
+            exec:
+              command: [ "pg_isready", "-U", { { .Values.timescale.postgres.user | quote } } ]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 20
+          livenessProbe:
+            exec:
+              command: [ "pg_isready", "-U", { { .Values.timescale.postgres.user | quote } } ]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 5
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: init-scripts
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: init-scripts
+          configMap:
+            name: { { include "qalipsis.fullname" . } }-timescale-init
+  volumeClaimTemplates:
+      {{- if .Values.timescale.persistence.enabled }}
+        - metadata:
+        name: data
+        spec:
+          accessModes: [ "ReadWriteOnce" ]
+          resources:
+            requests:
+              storage: { { .Values.timescale.persistence.size } }
+          { { - if .Values.timescale.persistence.storageClass } }
+          storageClassName: { { .Values.timescale.persistence.storageClass } }
+          { { - end } }
+    { { - end } }
+  { { - end } }

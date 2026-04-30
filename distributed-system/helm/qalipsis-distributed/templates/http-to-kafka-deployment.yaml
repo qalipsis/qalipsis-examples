@@ -1,0 +1,40 @@
+{ { - if .Values.httpToKafka.enabled } }
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: { { include "qalipsis.fullname" . } }-http-to-kafka
+  labels:
+    {{- include "qalipsis.labels" . | nindent 4 }}
+    {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "http-to-kafka") | nindent 4 }}
+spec:
+  replicas: { { .Values.httpToKafka.replicas } }
+  selector:
+    matchLabels:
+      { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "http-to-kafka") | nindent 6 } }
+  template:
+    metadata:
+      labels:
+        { { - include "qalipsis.labels" . | nindent 8 } }
+          { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "http-to-kafka") | nindent 8 } }
+    spec:
+      initContainers:
+        - name: wait-for-redpanda
+          image: busybox:1.36
+          command: [ 'sh', '-c', 'until nc -z {{ include "qalipsis.fullname" . }}-redpanda {{ .Values.redpanda.service.kafkaPort }}; do echo waiting for redpanda; sleep 2; done' ]
+      containers:
+        - name: http-to-kafka
+          image: "{{ .Values.httpToKafka.image.repository }}:{{ .Values.httpToKafka.image.tag }}"
+          args:
+            - "--https={{ .Values.httpToKafka.https.enabled }}"
+            - "--ssl-key=http-server.key"
+            - "--ssl-cert=http-server.crt"
+            - "--kafka-bootstrap={{ include "qalipsis.fullname" . }}-redpanda:{{ .Values.redpanda.service.kafkaPort }}"
+            - "--kafka-topic={{ .Values.httpToKafka.kafka.topic }}"
+          ports:
+            - containerPort: 8080
+              name: http
+            - containerPort: 8443
+              name: https
+          resources:
+            { { - toYaml .Values.httpToKafka.resources | nindent 12 } }
+  { { - end } }

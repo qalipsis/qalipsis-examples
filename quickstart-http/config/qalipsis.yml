@@ -11,3 +11,9 @@ report:
   export:
     console-live:
       enabled: false
+
+events:
+  root: info
+  export:
+    slf4j:
+      enabled: false

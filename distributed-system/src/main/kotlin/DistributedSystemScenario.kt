@@ -33,6 +33,7 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import io.qalipsis.api.annotations.Property
 import io.qalipsis.api.annotations.Scenario
 import io.qalipsis.api.executionprofile.immediate
+import io.qalipsis.api.executionprofile.stages
 import io.qalipsis.api.meters.steps.throughput
 import io.qalipsis.api.meters.steps.timer
 import io.qalipsis.api.scenario.scenario
@@ -42,17 +43,20 @@ import io.qalipsis.api.steps.innerJoin
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.returns
 import io.qalipsis.api.steps.verify
+import io.qalipsis.plugins.kafka.configuration.defaults
 import io.qalipsis.plugins.kafka.consumer.consume
 import io.qalipsis.plugins.kafka.kafka
 import io.qalipsis.plugins.kafka.serdes.jsonSerde
 import io.qalipsis.plugins.netty.RequestResult
+import io.qalipsis.plugins.netty.configuration.defaults
 import io.qalipsis.plugins.netty.http.response.HttpResponse
 import io.qalipsis.plugins.netty.http.spec.HttpVersion
 import io.qalipsis.plugins.netty.http.spec.http
 import io.qalipsis.plugins.netty.netty
-import io.qalipsis.plugins.r2dbc.jasync.dialect.Protocol
-import io.qalipsis.plugins.r2dbc.jasync.poll.poll
-import io.qalipsis.plugins.r2dbc.jasync.r2dbcJasync
+import io.qalipsis.plugins.sql.configuration.defaults
+import io.qalipsis.plugins.sql.dialect.Protocol
+import io.qalipsis.plugins.sql.poll.poll
+import io.qalipsis.plugins.sql.sql
 import java.math.BigDecimal
 import java.time.Duration
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
@@ -88,7 +92,36 @@ class DistributedSystemScenario(
         scenario {
             minionsCount = 100
             profile {
-                immediate()
+                stages {
+                    stage(40.0, 20_000, 30_000)
+                    stage(60.0, 20_000, 30_000)
+                }
+                netty().defaults {
+                    httpConnection {
+                        url(url = serverUrl)
+                        connectTimeout = Duration.ofMillis(2000)
+                        version = HttpVersion.HTTP_2_0
+                        tls { disableCertificateVerification = true }
+                        if (poolSize > 0) {
+                            pool { size = poolSize }
+                        }
+                    }
+                    monitoring { all() }
+                }
+                kafka().defaults {
+                    bootstrap(kafkaBootstrap)
+                    monitoring { all() }
+                }
+                sql().defaults {
+                    protocol(Protocol.POSTGRESQL)
+                    connection {
+                        port = jdbcPort
+                        username = jdbcUsername
+                        password = jdbcPassword
+                        database = jdbcDatabase
+                    }
+                    monitoring { all() }
+                }
             }
         }
             .start()
@@ -103,16 +136,6 @@ class DistributedSystemScenario(
             }
             .netty().http {
                 name = "http-data-push"
-                connect {
-                    url(url = serverUrl)
-                    connectTimeout = Duration.ofMillis(2000)
-                    version = HttpVersion.HTTP_2_0
-                    tls { disableCertificateVerification = true }
-                }
-                if (poolSize > 0) {
-                    pool { size = poolSize }
-                }
-                monitoring { all() }
                 request { ctx, deviceState ->
                     simple(HttpMethod.POST, "/data")
                         .body(
@@ -143,7 +166,7 @@ class DistributedSystemScenario(
             .split {
                 // Verify the data in Kafka and Elasticsearch in parallel, in order to avoid that
                 // an error occurring on one prevents the other verification from running.
-                verifyKafka(kafkaBootstrap)
+                verifyKafka()
             }
             .verifyJdbc()
     }
@@ -151,21 +174,17 @@ class DistributedSystemScenario(
     /**
      * Verifies the correctness of the data in Kafka and the latency.
      */
-    private fun StepSpecification<*, DeviceState, *>.verifyKafka(
-        kafkaBootstrap: String,
-    ) {
+    private fun StepSpecification<*, DeviceState, *>.verifyKafka() {
         innerJoin()
             .using { correlationRecord -> correlationRecord.value.deviceId }
             .on {
                 it.kafka()
                     .consume {
                         name = "consume-http-requests"
-                        bootstrap(kafkaBootstrap)
                         topics("http-request")
                         groupId(groupId = "distributed-system-scenario-demo")
                         pollTimeout(pollTimeout = 1000)
                         offsetReset(offsetReset = OffsetResetStrategy.EARLIEST)
-                        monitoring { all() }
                     }.flatten(Serdes.ByteArray().deserializer(), jsonSerde<DeviceState>().deserializer())
             }
             .having { correlationRecord -> correlationRecord.value.record.value?.deviceId }
@@ -198,19 +217,11 @@ class DistributedSystemScenario(
         innerJoin()
             .using { deviceState -> deviceState.value.deviceId }
             .on {
-                it.r2dbcJasync()
+                it.sql()
                     .poll {
                         name = "poll.in"
-                        protocol(Protocol.POSTGRESQL)
-                        connection {
-                            port = jdbcPort
-                            username = jdbcUsername
-                            password = jdbcPassword
-                            database = jdbcDatabase
-                        }
                         query("""SELECT * FROM device_state order by "timestamp"""")
                         pollDelay(Duration.ofSeconds(1))
-                        monitoring { all() }
                     }.flatten()
             }
             .having { correlationRecord -> correlationRecord.value.value["device_id"] as? String }
@@ -249,7 +260,7 @@ class DistributedSystemScenario(
     private fun randomLatitude() = Math.random() * 180 - 90
 
     /**
-     * State of the device sent vio HTTP to the server.
+     * State of the device sent via HTTP to the server.
      */
     data class DeviceState(
         val deviceId: String,

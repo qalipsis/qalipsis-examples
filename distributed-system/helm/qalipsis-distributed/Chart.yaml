@@ -1,0 +1,6 @@
+apiVersion: v2
+name: qalipsis-distributed
+description: Helm chart for the QALIPSIS distributed system demo environment
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

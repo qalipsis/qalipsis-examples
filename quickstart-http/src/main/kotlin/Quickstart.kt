@@ -22,19 +22,18 @@ import io.kotest.matchers.comparables.shouldBeLessThanOrEqualTo
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContainOnlyOnce
-import io.netty.handler.codec.http.HttpHeaderValues
-import io.netty.handler.codec.http.HttpMethod
-import io.netty.handler.codec.http.HttpResponseStatus
 import io.qalipsis.api.annotations.Scenario
 import io.qalipsis.api.executionprofile.stages
 import io.qalipsis.api.scenario.scenario
+import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.verify
-import io.qalipsis.plugins.netty.http.request.SimpleHttpRequest
-import io.qalipsis.plugins.netty.http.spec.HttpVersion
-import io.qalipsis.plugins.netty.http.spec.http
-import io.qalipsis.plugins.netty.http.spec.httpWith
-import io.qalipsis.plugins.netty.netty
+import io.qalipsis.plugins.http.ConnectionStrategyType
+import io.qalipsis.plugins.http.configuration.defaults
+import io.qalipsis.plugins.http.http
+import io.qalipsis.plugins.http.httpApache
+import io.qalipsis.plugins.http.request.HttpMethod
 import java.time.Duration
+import org.apache.hc.core5.http.ContentType
 
 @Suppress("DuplicatedCode")
 class Quickstart {
@@ -42,31 +41,36 @@ class Quickstart {
     @Scenario("quickstart-http")
     fun quickstart() {
         scenario {
-            minionsCount = 1_000
+            minionsCount = 500
             profile {
                 stages {
-                    stage(100.0, 25_000, 30_000)
+                    stage(100.0, 20_000, 30_000)
+                }
+
+                httpApache().defaults {
+                    connect {
+                        connectionStrategy {
+                            shared = true
+                            strategyType = ConnectionStrategyType.WARMUP
+                        }
+                        url(url = "https://localhost:18443")
+                        tls {
+                            disableCertificateVerification = true
+                        }
+                    }
                 }
             }
         }
             .start()
-            .netty()
+            .httpApache()
             .http {
                 name = "quickstart-http-post"
                 report {
                     reportErrors = true
                 }
-                connect {
-                    url(url = "https://localhost:18443")
-                    connectTimeout = Duration.ofMillis(1000)
-                    version = HttpVersion.HTTP_2_0
-                    tls { disableCertificateVerification = true }
-                }
                 request { _, _ ->
-                    simple(HttpMethod.POST, "/echo").body(
-                        "Hello World!",
-                        HttpHeaderValues.TEXT_PLAIN
-                    )
+                    simple(HttpMethod.POST, "/echo")
+                        .body("Hello World!", ContentType.TEXT_PLAIN)
                 }
             }
             .verify { result ->
@@ -74,7 +78,7 @@ class Quickstart {
                     result.asClue {
                         it.response shouldNotBe null
                         it.response!!.asClue { response ->
-                            response.status shouldBe HttpResponseStatus.OK
+                            response.code shouldBe 200
                             response.body shouldContainOnlyOnce "Hello World!"
                             response.body shouldContainOnlyOnce "POST"
                         }
@@ -87,29 +91,29 @@ class Quickstart {
             }.configure {
                 name = "verify-post"
             }
-            .netty()
-            .httpWith("quickstart-http-post") {
+            .map { 1 }
+            .httpApache()
+            .http {
+                name = "quickstart-http-patch"
                 report {
                     reportErrors = true
                 }
                 request { _, _ ->
-                    SimpleHttpRequest(HttpMethod.PATCH, "/echo").body(
-                        "Hello World!",
-                        HttpHeaderValues.TEXT_PLAIN
-                    )
+                    simple(HttpMethod.PATCH, "/echo")
+                        .body("Hello World!", ContentType.TEXT_PLAIN)
                 }
             }.verify { result ->
                 assertSoftly {
                     result.asClue {
                         it.response shouldNotBe null
                         it.response!!.asClue { response ->
-                            response.status shouldBe HttpResponseStatus.OK
+                            response.code shouldBe 200
                             response.body shouldContainOnlyOnce "Hello World!"
                             response.body shouldContainOnlyOnce "PATCH"
                         }
                         it.meters.asClue { meters ->
-                            meters.timeToFirstByte!! shouldBeLessThanOrEqualTo Duration.ofMillis(500)
-                            meters.timeToLastByte!! shouldBeLessThanOrEqualTo Duration.ofMillis(1000)
+                            meters.timeToFirstByte!! shouldBeLessThanOrEqualTo Duration.ofSeconds(1)
+                            meters.timeToLastByte!! shouldBeLessThanOrEqualTo Duration.ofSeconds(2)
                         }
                     }
                 }

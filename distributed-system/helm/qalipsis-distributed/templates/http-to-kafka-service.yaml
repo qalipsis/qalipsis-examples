@@ -1,0 +1,22 @@
+{ { - if .Values.httpToKafka.enabled } }
+apiVersion: v1
+kind: Service
+metadata:
+  name: { { include "qalipsis.fullname" . } }-http-to-kafka
+  labels:
+    {{- include "qalipsis.labels" . | nindent 4 }}
+    {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "http-to-kafka") | nindent 4 }}
+spec:
+  type: { { .Values.httpToKafka.service.type } }
+  ports:
+    - port: { { .Values.httpToKafka.service.httpPort } }
+      targetPort: 8080
+      protocol: TCP
+      name: http
+    - port: { { .Values.httpToKafka.service.httpsPort } }
+      targetPort: 8443
+      protocol: TCP
+      name: https
+  selector:
+    { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "http-to-kafka") | nindent 4 } }
+  { { - end } }

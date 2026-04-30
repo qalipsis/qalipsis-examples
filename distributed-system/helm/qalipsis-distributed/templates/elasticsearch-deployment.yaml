@@ -1,0 +1,60 @@
+{ { - if .Values.elasticsearch.enabled } }
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: { { include "qalipsis.fullname" . } }-elasticsearch
+  labels:
+    {{- include "qalipsis.labels" . | nindent 4 }}
+    {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "elasticsearch") | nindent 4 }}
+spec:
+  replicas: { { .Values.elasticsearch.replicas } }
+  selector:
+    matchLabels:
+      { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "elasticsearch") | nindent 6 } }
+  template:
+    metadata:
+      labels:
+        { { - include "qalipsis.labels" . | nindent 8 } }
+          { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "elasticsearch") | nindent 8 } }
+    spec:
+      containers:
+        - name: elasticsearch
+          image: "{{ .Values.elasticsearch.image.repository }}:{{ .Values.elasticsearch.image.tag }}"
+          ports:
+            - containerPort: 9200
+              name: http
+          env:
+            - name: ES_JAVA_OPTS
+              value: { { .Values.elasticsearch.javaOpts | quote } }
+            - name: discovery.type
+              value: "single-node"
+            - name: bootstrap.memory_lock
+              value: "true"
+          resources:
+            { { - toYaml .Values.elasticsearch.resources | nindent 12 } }
+          readinessProbe:
+            tcpSocket:
+              port: 9200
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 20
+          livenessProbe:
+            tcpSocket:
+              port: 9200
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 5
+          volumeMounts:
+            - name: data
+              mountPath: /usr/share/elasticsearch/data
+      volumes:
+        - name: data
+          { { - if .Values.elasticsearch.persistence.enabled } }
+          persistentVolumeClaim:
+            claimName: { { include "qalipsis.fullname" . } }-elasticsearch
+          {{- else }}
+          emptyDir: { }
+          { { - end } }
+  { { - end } }

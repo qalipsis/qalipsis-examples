@@ -1,0 +1,30 @@
+{ { - if .Values.redpanda.enabled } }
+apiVersion: v1
+kind: Service
+metadata:
+  name: { { include "qalipsis.fullname" . } }-redpanda
+  labels:
+    {{- include "qalipsis.labels" . | nindent 4 }}
+    {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "redpanda") | nindent 4 }}
+spec:
+  type: { { .Values.redpanda.service.type } }
+  ports:
+    - port: { { .Values.redpanda.service.kafkaPort } }
+      targetPort: 9092
+      protocol: TCP
+      name: kafka
+    - port: { { .Values.redpanda.service.schemaRegistryPort } }
+      targetPort: 8081
+      protocol: TCP
+      name: schema-registry
+    - port: { { .Values.redpanda.service.pandaproxyPort } }
+      targetPort: 8082
+      protocol: TCP
+      name: pandaproxy
+    - port: { { .Values.redpanda.service.adminPort } }
+      targetPort: 9644
+      protocol: TCP
+      name: admin
+  selector:
+    { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "redpanda") | nindent 4 } }
+  { { - end } }

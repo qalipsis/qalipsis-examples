@@ -1,0 +1,74 @@
+{ { - if .Values.influxdb.enabled } }
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: { { include "qalipsis.fullname" . } }-influxdb
+  labels:
+    {{- include "qalipsis.labels" . | nindent 4 }}
+    {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "influxdb") | nindent 4 }}
+spec:
+  replicas: { { .Values.influxdb.replicas } }
+  selector:
+    matchLabels:
+      { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "influxdb") | nindent 6 } }
+  template:
+    metadata:
+      labels:
+        { { - include "qalipsis.labels" . | nindent 8 } }
+          { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "influxdb") | nindent 8 } }
+    spec:
+      containers:
+        - name: influxdb
+          image: "{{ .Values.influxdb.image.repository }}:{{ .Values.influxdb.image.tag }}"
+          ports:
+            - containerPort: 8086
+              name: http
+          env:
+            - name: DOCKER_INFLUXDB_INIT_MODE
+              value: "setup"
+            - name: DOCKER_INFLUXDB_INIT_USERNAME
+              value: { { .Values.influxdb.init.username | quote } }
+            - name: DOCKER_INFLUXDB_INIT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: { { include "qalipsis.fullname" . } }-influxdb
+                  key: admin-password
+            - name: DOCKER_INFLUXDB_INIT_ORG
+              value: { { .Values.influxdb.init.org | quote } }
+            - name: DOCKER_INFLUXDB_INIT_BUCKET
+              value: { { .Values.influxdb.init.bucket | quote } }
+            - name: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: { { include "qalipsis.fullname" . } }-influxdb
+                  key: admin-token
+          resources:
+            { { - toYaml .Values.influxdb.resources | nindent 12 } }
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8086
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 20
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8086
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 5
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/influxdb2
+      volumes:
+        - name: data
+          { { - if .Values.influxdb.persistence.enabled } }
+          persistentVolumeClaim:
+            claimName: { { include "qalipsis.fullname" . } }-influxdb
+          {{- else }}
+          emptyDir: { }
+          { { - end } }
+  { { - end } }

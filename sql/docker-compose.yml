@@ -1,0 +1,40 @@
+services:
+
+  oracle:
+    image: gvenzl/oracle-free:slim-faststart
+    restart: always
+    container_name: sql-oracledb-server
+    ports:
+      - "11521:1521"
+    environment:
+      ORACLE_PASSWORD: "root"
+      ORACLE_DATABASE: "IOT"
+      APP_USER: "test"
+      APP_USER_PASSWORD: "test"
+    volumes:
+      - ./docker-config/oracle/create_tables.sql:/container-entrypoint-initdb.d/iot/create_tables.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'SELECT 1 FROM DUAL;' | sqlplus -s test/test@localhost:1521/iot | grep -q '1'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  postgres:
+    image: postgres
+    container_name: sql-postgres-server
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: root
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - ./docker-config/postgres/create_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql
+      - ./build/postgresql-data:/var/lib/postgresql/data
+    ports:
+      - "15432:5432"
+
+  healthy_checker:
+    container_name: sql_healthiness_checker
+    image: busybox
+    depends_on:
+      oracle:
+        condition: service_healthy

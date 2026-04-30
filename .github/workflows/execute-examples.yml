@@ -126,7 +126,13 @@ jobs:
         with:
           arguments: :redis:check
 
-      - name: Netty - Quickstart HTTP
+      - name: SQL
+        if: always()
+        uses: gradle/gradle-build-action@v3.3.2
+        with:
+          arguments: :sql:check
+
+      - name: Quickstart HTTP
         if: always()
         uses: gradle/gradle-build-action@v3.3.2
         with:

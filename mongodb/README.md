@@ -2,9 +2,9 @@
 
 This example demos you how to save, poll and search data with the mongoDB plugin. You will find two scenarios:
 
-1. _Save and poll_ :  Records are saved into the database using the save step, then retrieved periodically from the same
+1. _Save and poll_:  Records are saved into the database using the save step, then retrieved periodically from the same
    location and compared to the original saved record.
-2. _Save and search_ : Records are saved into the database using the save step, then searched with a query from the same
+2. _Save and search_: Records are saved into the database using the save step, then searched with a query from the same
    location and compared to the original saved record.
 
 ## How to start the scenarios

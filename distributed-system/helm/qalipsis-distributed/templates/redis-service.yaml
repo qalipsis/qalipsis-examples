@@ -1,0 +1,18 @@
+{ { - if .Values.redis.enabled } }
+apiVersion: v1
+kind: Service
+metadata:
+  name: { { include "qalipsis.fullname" . } }-redis
+  labels:
+    {{- include "qalipsis.labels" . | nindent 4 }}
+    {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "redis") | nindent 4 }}
+spec:
+  type: { { .Values.redis.service.type } }
+  ports:
+    - port: { { .Values.redis.service.port } }
+      targetPort: 6379
+      protocol: TCP
+      name: redis
+  selector:
+    { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "redis") | nindent 4 } }
+  { { - end } }
