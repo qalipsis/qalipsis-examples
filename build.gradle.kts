@@ -20,7 +20,7 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
 import org.gradle.api.tasks.testing.logging.TestLogEvent.STANDARD_ERROR
 
 plugins {
-    id("io.qalipsis.bootstrap") version "0.1.5"
+    id("io.qalipsis.bootstrap") version "0.1.6"
 
     id("nebula.maven-publish") version "18.4.0"
     id("com.palantir.docker") version "0.36.0" apply false

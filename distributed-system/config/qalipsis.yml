@@ -14,13 +14,6 @@ datasource:
   username: qalipsis_demo
   password: qalipsis
 
-liquibase:
-  enabled: true
-  datasources:
-    default:
-      liquibase-schema: qalipsis_liquibase
-
-
 # For the executors:
 # - 0 or less means the Kotlin Global Scope
 # - 1 or more means a fixed thread execution context with the number of threads - cannot be less than 2
@@ -36,6 +29,10 @@ executors:
 meters:
   export:
     enabled: true
+    timer:
+      percentiles:
+        - 95.0
+        - 99.0
     campaign-step: PT2S
     elasticsearch:
       hosts: http://localhost:9200
@@ -61,7 +58,7 @@ meters:
       password: qalipsis
   provider:
     timescaledb:
-      enabled: false
+      enabled: true
       host: localhost
       port: 25432
       database: qalipsis
@@ -116,7 +113,7 @@ http:
     url: https://localhost:18443
   client:
     pool:
-      size: 20
+      size: 0
 
 kafka:
   bootstrap: localhost:19092

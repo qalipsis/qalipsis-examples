@@ -16,25 +16,14 @@
 
 package io.qalipsis.example.distributedsystem
 
-import assertk.all
-import assertk.assertThat
-import assertk.assertions.isBetween
-import assertk.assertions.isDataClassEqualTo
-import assertk.assertions.isEqualTo
-import assertk.assertions.isInstanceOf
-import assertk.assertions.isLessThan
-import assertk.assertions.isNotNull
-import assertk.assertions.key
-import assertk.assertions.prop
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.netty.handler.codec.http.HttpHeaderValues
-import io.netty.handler.codec.http.HttpMethod
-import io.netty.handler.codec.http.HttpResponseStatus
+import io.kotest.assertions.asClue
+import io.kotest.matchers.equality.shouldBeEqualToComparingFields
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
 import io.qalipsis.api.annotations.Property
 import io.qalipsis.api.annotations.Scenario
-import io.qalipsis.api.executionprofile.immediate
 import io.qalipsis.api.executionprofile.stages
-import io.qalipsis.api.meters.steps.throughput
 import io.qalipsis.api.meters.steps.timer
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.StepSpecification
@@ -43,22 +32,21 @@ import io.qalipsis.api.steps.innerJoin
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.returns
 import io.qalipsis.api.steps.verify
+import io.qalipsis.plugins.http.ConnectionStrategyType
+import io.qalipsis.plugins.http.configuration.defaults
+import io.qalipsis.plugins.http.http
+import io.qalipsis.plugins.http.httpApache
+import io.qalipsis.plugins.http.request.HttpMethod
 import io.qalipsis.plugins.kafka.configuration.defaults
 import io.qalipsis.plugins.kafka.consumer.consume
 import io.qalipsis.plugins.kafka.kafka
 import io.qalipsis.plugins.kafka.serdes.jsonSerde
-import io.qalipsis.plugins.netty.RequestResult
-import io.qalipsis.plugins.netty.configuration.defaults
-import io.qalipsis.plugins.netty.http.response.HttpResponse
-import io.qalipsis.plugins.netty.http.spec.HttpVersion
-import io.qalipsis.plugins.netty.http.spec.http
-import io.qalipsis.plugins.netty.netty
 import io.qalipsis.plugins.sql.configuration.defaults
 import io.qalipsis.plugins.sql.dialect.Protocol
 import io.qalipsis.plugins.sql.poll.poll
 import io.qalipsis.plugins.sql.sql
-import java.math.BigDecimal
 import java.time.Duration
+import org.apache.hc.core5.http.HttpVersion
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.common.serialization.Serdes
 
@@ -96,21 +84,24 @@ class DistributedSystemScenario(
                     stage(40.0, 20_000, 30_000)
                     stage(60.0, 20_000, 30_000)
                 }
-                netty().defaults {
-                    httpConnection {
-                        url(url = serverUrl)
-                        connectTimeout = Duration.ofMillis(2000)
+                httpApache().defaults {
+                    connect {
+                        url(serverUrl)
                         version = HttpVersion.HTTP_2_0
                         tls { disableCertificateVerification = true }
-                        if (poolSize > 0) {
-                            pool { size = poolSize }
+                        connectionStrategy {
+                            if (poolSize > 0) {
+                                shared = true
+                                strategyType = ConnectionStrategyType.POOL
+                            } else {
+                                shared = true
+                                strategyType = ConnectionStrategyType.WARMUP
+                            }
                         }
                     }
-                    monitoring { all() }
                 }
                 kafka().defaults {
                     bootstrap(kafkaBootstrap)
-                    monitoring { all() }
                 }
                 sql().defaults {
                     protocol(Protocol.POSTGRESQL)
@@ -120,7 +111,6 @@ class DistributedSystemScenario(
                         password = jdbcPassword
                         database = jdbcDatabase
                     }
-                    monitoring { all() }
                 }
             }
         }
@@ -134,29 +124,26 @@ class DistributedSystemScenario(
                     batteryLevelPercentage = (Math.random() * 100).toInt()
                 )
             }
-            .netty().http {
+            .httpApache().http {
                 name = "http-data-push"
                 request { ctx, deviceState ->
                     simple(HttpMethod.POST, "/data")
                         .body(
                             body = objectMapper.writeValueAsBytes(deviceState),
-                            contentType = HttpHeaderValues.APPLICATION_JSON
+                            contentType = "application/json"
                         )
                         .addHeader(name = "message-key", value = ctx.minionId)
                 }
             }
-            .throughput("http-requests-per-seconds")
+            .timer("time-to-last-byte") { _, result ->
+                result.meters.timeToLastByte!!
+            }.shouldSatisfy {
+                percentile(95.0).isLessThan(Duration.ofMillis(130))
+            }
             .verify { result ->
-                assertThat(result).all {
-                    prop(RequestResult<*, HttpResponse<String>, *>::response).isNotNull().all {
-                        prop(HttpResponse<*>::status).isEqualTo(HttpResponseStatus.ACCEPTED)
-                    }
-                    prop(RequestResult<*, HttpResponse<String>, *>::meters).all {
-                        prop(RequestResult.Meters::timeToLastByte).isNotNull()
-                            .isLessThan(Duration.ofSeconds(2))
-                    }
-                }
-            }.configure {
+                result.response?.code shouldBe 202
+            }
+            .configure {
                 name = "Verify data push"
                 report {
                     reportErrors = true
@@ -176,7 +163,11 @@ class DistributedSystemScenario(
      */
     private fun StepSpecification<*, DeviceState, *>.verifyKafka() {
         innerJoin()
-            .using { correlationRecord -> correlationRecord.value.deviceId }
+            .using { deviceState ->
+                val deviceId = deviceState.value.deviceId
+                val deviceTimestamp = deviceState.value.timestamp
+                "$deviceId:$deviceTimestamp"
+            }
             .on {
                 it.kafka()
                     .consume {
@@ -187,7 +178,11 @@ class DistributedSystemScenario(
                         offsetReset(offsetReset = OffsetResetStrategy.EARLIEST)
                     }.flatten(Serdes.ByteArray().deserializer(), jsonSerde<DeviceState>().deserializer())
             }
-            .having { correlationRecord -> correlationRecord.value.record.value?.deviceId }
+            .having { correlationRecord ->
+                val deviceId = correlationRecord.value.record.value!!.deviceId
+                val deviceTimestamp = correlationRecord.value.record.value!!.timestamp
+                "$deviceId:$deviceTimestamp"
+            }
             .configure {
                 name = "join-request-with-kafka"
                 timeout(duration = 30_000)
@@ -201,8 +196,9 @@ class DistributedSystemScenario(
             }
             .verify { (deviceState, kafkaResult) ->
                 // The device state received from Kafka should be similar to the one sent by HTTP.
-                assertThat(actual = kafkaResult.record.value).isNotNull().isDataClassEqualTo(deviceState)
-            }.configure {
+                kafkaResult.record.value.shouldNotBeNull() shouldBeEqualToComparingFields deviceState
+            }
+            .configure {
                 name = "Verify Kafka data"
                 report {
                     reportErrors = true
@@ -215,16 +211,24 @@ class DistributedSystemScenario(
      */
     private fun StepSpecification<*, DeviceState, *>.verifyJdbc() {
         innerJoin()
-            .using { deviceState -> deviceState.value.deviceId }
+            .using { deviceState ->
+                val deviceId = deviceState.value.deviceId
+                val deviceTimestamp = deviceState.value.timestamp
+                "$deviceId:$deviceTimestamp"
+            }
             .on {
                 it.sql()
                     .poll {
                         name = "poll.in"
-                        query("""SELECT * FROM device_state order by "timestamp"""")
+                        query(""" SELECT * FROM device_state order by "timestamp" """)
                         pollDelay(Duration.ofSeconds(1))
                     }.flatten()
             }
-            .having { correlationRecord -> correlationRecord.value.value["device_id"] as? String }
+            .having { correlationRecord ->
+                val deviceId = correlationRecord.value.value["device_id"]?.toString()
+                val deviceTimestamp = correlationRecord.value.value["timestamp"] as Long
+                "$deviceId:$deviceTimestamp"
+            }
             .configure {
                 name = "join-request-in-timescale"
                 timeout(30_000)
@@ -233,21 +237,20 @@ class DistributedSystemScenario(
                 }
             }
             .filterNotNull()
-            .timer("time-to-timescale") { _, (deviceState, dbRecord) ->
+            .timer("time-to-db") { _, (deviceState, dbRecord) ->
                 Duration.ofMillis((dbRecord.value["saving_timestamp"] as Long) - deviceState.timestamp)
+            }.shouldSatisfy {
+                percentile(95.0).isLessThan(Duration.ofMillis(1000))
             }
-            .configure { name = "time-to-timescale" }
+            .configure { name = "time-to-db" }
             .verify { (deviceState, dbRecord) ->
                 // The device state received from Kafka should be similar to the one sent by HTTP.
-                assertThat(actual = dbRecord.value).isNotNull().all {
-                    key("battery_level_percentage").isEqualTo(deviceState.batteryLevelPercentage)
-                    key("position_lat").isNotNull().isInstanceOf(BigDecimal::class).transform { it.toDouble() }
-                        .isBetween(deviceState.positionLat - 10e-3, deviceState.positionLat + 10e-3)
-                    key("position_lon").isNotNull().isInstanceOf(BigDecimal::class).transform { it.toDouble() }
-                        .isBetween(deviceState.positionLon - 10e-3, deviceState.positionLon + 10e-3)
-                    key("message_key").isEqualTo(deviceState.deviceId)
+                dbRecord.value.shouldNotBeNull().asClue { dbValues ->
+                    dbValues["battery_level_percentage"] shouldBe deviceState.batteryLevelPercentage
+                    dbValues["message_key"] shouldBe deviceState.deviceId
                 }
-            }.configure {
+            }
+            .configure {
                 name = "Verify Timescale data"
                 report {
                     reportErrors = true

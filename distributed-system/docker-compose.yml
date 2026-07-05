@@ -118,7 +118,7 @@ services:
       POSTGRES_PASSWORD: qalipsis
       POSTGRES_DB: qalipsis
     volumes:
-      - ./config/timescale/init/999_create_schemas.sh:/docker-entrypoint-initdb.d/999_create_schemas.sh
+      - ./docker-config/timescale/init/999_create_schemas.sh:/docker-entrypoint-initdb.d/999_create_schemas.sh
       - timescale-volume:/var/lib/postgresql/data
     ports:
       - "25432:5432"
@@ -132,7 +132,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: qalipsis@qalipsis.com
       PGADMIN_DEFAULT_PASSWORD: "qalipsis"
     volumes:
-      - ./config/pgadmin/servers.json:/pgadmin4/servers.json
+      - ./docker-config/pgadmin/servers.json:/pgadmin4/servers.json
       - ./volumes/pgadmin/backup:/backup
     ports:
       - "25433:80"

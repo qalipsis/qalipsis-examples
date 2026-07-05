@@ -17,60 +17,32 @@ See the [demo microservice documentation](../demo-microservice/README.md) for mo
 
 The scenario performs the following operations:
 
-* Try to push data without login and verify that it is not allowed
-* Log in and verify it succeeded
-* Send data to the HTTP endpoint with the session cookie, 50 times
+* Send data to the HTTP endpoint.
 * Then run in parallel
     * Join with the data from Kafka and verify the latency of the message to be pushed to Kafka.
     * Join with the data from Elasticsearch and verify the latency of the message to be saved into Elasticsearch.
 
-## Preparation
+Analytics data are configured to be concurrently pushed to Elasticsearch, InfluxDB, TimescaleDB - available in the
+Docker compose file.
 
-Start the docker environment with the file `docker-compose.yml`.
+## Execution
 
-Execute the Gradle tasks to start two instances of the service, using
-Kafka  [demo microservice documentation](../demo-microservice/README.md#gradle-tasks-to-run-the-server) for more
-details.
+Execute the gradle tasks `gradlew :distributed-system:runDistributedDemo` to automatically start the required services
+via Docker compose and execute the demo.
 
-Once Elasticsearch and Kibana are ready, go to the [dev console](http://localhost:5601/app/dev_tools#/console) and
-create the index to receive the test data:
+You will find resulting reports in `distributed-system/build/reports/qalipsis` and JUnit results in
+`distributed-system/build/test-results/qalipsis`.
 
-```
-PUT http-requests
-{
-  "settings": {
-    "refresh_interval": "1s",
-    "number_of_replicas" : 0
-  },
-  "mappings": {
-    "_source": {
-      "enabled": true
-    },
-    "properties": {
-      "@messageKey": {
-        "type": "keyword"
-      },
-      "@savingTimestamp": {
-        "type": "date",
-        "format": "epoch_millis"
-      },
-      "batteryLevelPercentage": {
-        "type": "integer"
-      },
-      "deviceId": {
-        "type": "keyword"
-      },
-      "position": {
-        "type": "geo_point"
-      },
-      "timestamp": {
-        "type": "date",
-        "format": "epoch_millis"
-      }
-    }
-  }
-}
-```
+Alternatively, you can start the Docker compose file yourself and execute
+`gradlew :distributed-system:runQalipsisWithGui` to use the GUI from QALIPSIS, accessible at http://localhost:8400 or
+the API at http://localhost8400/api.
 
-Then start the demo scenario, using your configuration of choice for the size of the HTTP client pool, the number of
-minions and so on...
+## Links
+
+* [QALIPSIS GUI](http://localhost8400)
+* [QALIPSIS API](http://localhost8400/api)
+* [Elasticsearch](http://localhost:9200)
+* [Kibana](http://localhost:5601)
+* [Redpanda Console](http://localhost:28080)
+* [PgAdmin](http://localhost:25433)
+* [InfluxDB](http://localhost:18086)

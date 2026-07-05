@@ -33,8 +33,9 @@ qalipsis {
 }
 
 dependencies {
-    implementation("com.willowtreeapps.assertk:assertk-jvm:0.23")
-    implementation("io.kotest:kotest-assertions-core:5.4.2")
+    implementation("io.kotest:kotest-assertions-core-jvm:5.+") {
+        exclude(group = "org.jetbrains.kotlin")
+    }
 }
 
 tasks {

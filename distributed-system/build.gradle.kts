@@ -28,8 +28,7 @@ description = "Demo how to test a distributed system"
 qalipsis {
     plugins {
         apacheKafka()
-        netty()
-        //r2dbcJasync()
+        http()
         sql()
         timescaleDb()
         elasticsearch()
@@ -38,7 +37,9 @@ qalipsis {
 }
 
 dependencies {
-    implementation("com.willowtreeapps.assertk:assertk-jvm:0.23")
+    implementation("io.kotest:kotest-assertions-core-jvm:5.+") {
+        exclude(group = "org.jetbrains.kotlin")
+    }
 }
 
 tasks {
@@ -55,12 +56,6 @@ tasks {
             "-XX:MaxInlineLevel=15"
         )
         maxHeapSize = "2G"
-
-        configuration(
-            "report.export.console.enabled" to "true",
-            "report.export.junit.enabled" to "true",
-            "report.export.junit.folder" to project.layout.buildDirectory.dir("test-results").get().asFile.path
-        )
 
         dependsOn("dockerComposeUp")
         finalizedBy("dockerComposeDown")
@@ -86,6 +81,8 @@ tasks {
         )
         classpath = sourceSets["main"].runtimeClasspath
         workingDir = projectDir
+
+        dependsOn("dockerComposeUp")
     }
 }
 

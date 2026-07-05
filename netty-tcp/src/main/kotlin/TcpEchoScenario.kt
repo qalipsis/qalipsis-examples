@@ -16,20 +16,15 @@
 
 package io.qalipsis.example.tcpecho
 
-import assertk.all
-import assertk.assertThat
-import assertk.assertions.isLessThan
-import assertk.assertions.isNotNull
-import assertk.assertions.prop
+import io.kotest.matchers.comparables.shouldBeLessThan
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.qalipsis.api.annotations.Scenario
 import io.qalipsis.api.executionprofile.immediate
 import io.qalipsis.api.scenario.scenario
 import io.qalipsis.api.steps.map
 import io.qalipsis.api.steps.returns
 import io.qalipsis.api.steps.verify
-import io.qalipsis.plugins.netty.RequestResult
 import io.qalipsis.plugins.netty.netty
-import io.qalipsis.plugins.netty.tcp.ConnectionAndRequestResult
 import io.qalipsis.plugins.netty.tcp.spec.closeTcp
 import io.qalipsis.plugins.netty.tcp.spec.tcp
 import io.qalipsis.plugins.netty.tcp.spec.tcpWith
@@ -81,12 +76,7 @@ class TcpEchoScenario {
                 }
             }
             .verify {
-                assertThat(it).all {
-                    prop(ConnectionAndRequestResult<*, *>::meters).all {
-                        prop(ConnectionAndRequestResult.Meters::timeToSuccessfulConnect).isNotNull()
-                            .isLessThan(Duration.ofMillis(1000))
-                    }
-                }
+                it.meters.timeToSuccessfulConnect.shouldNotBeNull() shouldBeLessThan Duration.ofMillis(1000)
             }.configure {
                 name = "verify-tcp-connect-and-query"
             }
@@ -97,12 +87,8 @@ class TcpEchoScenario {
                 iterate(10, Duration.ofMillis(100))
             }
             .verify {
-                assertThat(it).all {
-                    prop(RequestResult<ByteArray, ByteArray, *>::meters).all {
-                        prop(RequestResult.Meters::timeToFirstByte).isNotNull().isLessThan(Duration.ofMillis(300))
-                        prop(RequestResult.Meters::timeToLastByte).isNotNull().isLessThan(Duration.ofMillis(500))
-                    }
-                }
+                it.meters.timeToFirstByte.shouldNotBeNull() shouldBeLessThan Duration.ofMillis(300)
+                it.meters.timeToLastByte.shouldNotBeNull() shouldBeLessThan Duration.ofMillis(500)
             }.configure {
                 name = "verify-tcp-request"
             }
