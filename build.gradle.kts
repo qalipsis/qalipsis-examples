@@ -42,6 +42,11 @@ licenseReport {
 
 description = "QALIPSIS Examples"
 
+/**
+ * Version of Java to compile and run the examples, overriding the default of the QALIPSIS Gradle plugin.
+ */
+val javaVersion = 21
+
 tasks.withType<Wrapper> {
     distributionType = Wrapper.DistributionType.BIN
     gradleVersion = "8.5"
@@ -53,6 +58,12 @@ allprojects {
 
     apply(plugin = "java")
     apply(plugin = "nebula.maven-publish")
+
+    plugins.withId("io.qalipsis.bootstrap") {
+        extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension> {
+            jvmToolchain(javaVersion)
+        }
+    }
 
     repositories {
         mavenLocal()

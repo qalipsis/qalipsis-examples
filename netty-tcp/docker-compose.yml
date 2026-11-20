@@ -1,12 +1,14 @@
 services:
 
   echo-server:
-    image: krys/echo-server
+    # Echoes every TCP connection back to its sender.
+    image: alpine/socat:1.8.0.3
+    command: TCP-LISTEN:8800,fork,reuseaddr,backlog=4096 EXEC:cat
     restart: always
     ports:
       - "2701:8800"
     healthcheck:
-      test: nc -z localhost 8800
+      test: nc -z 127.0.0.1 8800
       interval: 5s
       timeout: 2s
       retries: 20

@@ -91,9 +91,9 @@ class CassandraSaveAndPoll {
                 rows { _, input ->
                     listOf(
                         CassandraSaveRow(
-                            "'ACME Inc.'",
-                            "'${input.deviceId}'",
-                            "'${input.timestamp}'",
+                            "ACME Inc.",
+                            input.deviceId,
+                            input.timestamp,
                             input.batteryLevel
                         )
                     )

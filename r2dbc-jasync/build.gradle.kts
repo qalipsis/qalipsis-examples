@@ -33,6 +33,12 @@ qalipsis {
     }
 }
 
+configurations.all {
+    // Jasync 2.2 authenticates with the API of the SCRAM library 2.x, while the plugin brings the 3.x, whose classes clash.
+    exclude("com.ongres.scram", "scram-client")
+    exclude("com.ongres.scram", "scram-common")
+}
+
 dependencies {
     implementation("io.kotest:kotest-assertions-core:5.4.2")
 }

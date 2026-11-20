@@ -143,4 +143,8 @@ The complete documentation of QALIPSIS is available under https://docs.qalipsis.
 
 ## License
 
-QALIPSIS examples are distributed under the Apache License 2.0, the terms can be read [here](./LICENSE).
+QALIPSIS examples are distributed under the Apache License 2.0, the terms can be read [here](./LICENSE). Running a
+scenario relies on the QALIPSIS runtime, which is dual-licensed under the GNU AGPL 3.0 or a commercial license, at your
+choice: see [LICENSE-COMMERCIAL.md](https://github.com/qalipsis/qalipsis-oss/blob/main/LICENSE-COMMERCIAL.md).
+
+To contribute, read [CONTRIBUTING.md](./CONTRIBUTING.md).

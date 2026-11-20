@@ -1,4 +1,4 @@
-FROM openjdk:11-jdk-slim
+FROM eclipse-temurin:21-jre
 LABEL maintainer="Eric Jessé <eric.jesse@aeris-consulting.com>"
 
 ARG JAR_NAME

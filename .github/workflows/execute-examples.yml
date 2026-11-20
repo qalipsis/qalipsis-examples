@@ -21,16 +21,24 @@ jobs:
     strategy:
       matrix:
         os: [ 'ubuntu-latest' ]
-        java: [ '17' ]
+        java: [ '21' ]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Set up JDK
-        uses: actions/setup-java@v1 # https://github.com/actions/setup-java
+        uses: actions/setup-java@v4 # https://github.com/actions/setup-java
         with:
           java-version: ${{ matrix.java }}
+          distribution: temurin
+
+      - name: Provide docker-compose
+        # The Gradle docker-compose plugin calls the standalone docker-compose, which the runners no longer ship.
+        run: |
+          printf '#!/bin/sh\nexec docker compose "$@"\n' | sudo tee /usr/local/bin/docker-compose > /dev/null
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose version
 
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@v1.0.4

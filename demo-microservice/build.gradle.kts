@@ -72,7 +72,9 @@ dependencies {
     runtimeOnly("org.fusesource.jansi:jansi:2.4.1")
 
     testImplementation("io.micronaut.rxjava3:micronaut-rxjava3-http-client")
-    testImplementation("io.mockk:mockk:1.11.0")
+    // Testcontainers 1.21.4+ negotiates the Docker API version required by recent Docker engines.
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.4"))
+    testImplementation("io.mockk:mockk:1.13.11")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("com.willowtreeapps.assertk:assertk:0.+")
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -206,7 +208,8 @@ docker {
     files(
         project.layout.projectDirectory.dir("src/main/docker/resources"),
         project.layout.buildDirectory.dir("classpath"),
-        project.layout.buildDirectory.file("libs/${jarFile.name}")
+        // The task rather than its file, so that the jar is built before being copied.
+        tasks.named("jar")
     )
     buildx(true)
     if (System.getenv("GITHUB_ACTIONS") != "true") {
