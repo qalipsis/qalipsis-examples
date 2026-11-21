@@ -41,3 +41,10 @@ hs_err_pid*
 
 # Maven Central publication
 sonatype.properties
+# The Gradle wrappers are part of the sources.
+!**/gradle/wrapper/gradle-wrapper.jar
+
+# Local state
+.DS_Store
+.gradle/
+.kotlin/

@@ -1,0 +1,22 @@
+{{- if .Values.kafka.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "qalipsis.fullname" . }}-kafka
+  labels:
+    {{- include "qalipsis.labels" . | nindent 4 }}
+    {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "kafka") | nindent 4 }}
+spec:
+  type: {{ .Values.kafka.service.type }}
+  ports:
+    - port: {{ .Values.kafka.service.port }}
+      targetPort: internal
+      protocol: TCP
+      name: internal
+    - port: {{ .Values.kafka.service.externalPort }}
+      targetPort: external
+      protocol: TCP
+      name: external
+  selector:
+    {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "kafka") | nindent 4 }}
+{{- end }}

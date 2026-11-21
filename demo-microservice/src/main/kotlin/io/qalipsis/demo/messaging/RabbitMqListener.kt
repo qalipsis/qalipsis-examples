@@ -6,7 +6,7 @@ import io.micronaut.rabbitmq.annotation.RabbitHeaders
 import io.micronaut.rabbitmq.annotation.RabbitListener
 import io.qalipsis.demo.entity.DeviceState
 import io.qalipsis.demo.services.JdbcService
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 
 /**
  * Implementation of [Listener] to support data receiving from RabbitMQ.

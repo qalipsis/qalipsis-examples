@@ -7,7 +7,7 @@ import io.micronaut.http.annotation.Post
 import io.micronaut.security.annotation.Secured
 import io.micronaut.security.rules.SecurityRule
 import io.qalipsis.demo.messaging.Publisher
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 
 /**
  * Demo controller.

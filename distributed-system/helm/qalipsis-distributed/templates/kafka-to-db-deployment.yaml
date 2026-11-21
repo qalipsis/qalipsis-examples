@@ -1,21 +1,21 @@
-{ { - if .Values.kafkaToDb.enabled } }
+{{- if .Values.kafkaToDb.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: { { include "qalipsis.fullname" . } }-kafka-to-db
+  name: {{ include "qalipsis.fullname" . }}-kafka-to-db
   labels:
     {{- include "qalipsis.labels" . | nindent 4 }}
     {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "kafka-to-db") | nindent 4 }}
 spec:
-  replicas: { { .Values.kafkaToDb.replicas } }
+  replicas: {{ .Values.kafkaToDb.replicas }}
   selector:
     matchLabels:
-      { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "kafka-to-db") | nindent 6 } }
+      {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "kafka-to-db") | nindent 6 }}
   template:
     metadata:
       labels:
-        { { - include "qalipsis.labels" . | nindent 8 } }
-          { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "kafka-to-db") | nindent 8 } }
+        {{- include "qalipsis.labels" . | nindent 8 }}
+          {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "kafka-to-db") | nindent 8 }}
     spec:
       initContainers:
         - name: wait-for-dependencies
@@ -25,7 +25,7 @@ spec:
             - -c
             - |
               until nc -z {{ include "qalipsis.fullname" . }}-redis {{ .Values.redis.service.port }}; do echo waiting for redis; sleep 2; done
-              until nc -z {{ include "qalipsis.fullname" . }}-redpanda {{ .Values.redpanda.service.kafkaPort }}; do echo waiting for redpanda; sleep 2; done
+              until nc -z {{ include "qalipsis.fullname" . }}-kafka {{ .Values.kafka.service.port }}; do echo waiting for kafka; sleep 2; done
               until nc -z {{ include "qalipsis.fullname" . }}-timescale {{ .Values.timescale.service.port }}; do echo waiting for timescale; sleep 2; done
       containers:
         - name: kafka-to-db
@@ -36,22 +36,20 @@ spec:
             - name: MESSAGING_KAFKA_LISTENER_ENABLED
               value: "true"
             - name: KAFKA_BOOTSTRAP_SERVERS
-              value: "{{ include "qalipsis.fullname" . }}-redpanda:{{ .Values.redpanda.service.kafkaPort }}"
+              value: "{{ include "qalipsis.fullname" . }}-kafka:{{ .Values.kafka.service.port }}"
             - name: REDIS_URI
               value: "redis://{{ include "qalipsis.fullname" . }}-redis:{{ .Values.redis.service.port }}"
             - name: DATASOURCES_DEFAULT_URL
               value: "jdbc:postgresql://{{ include "qalipsis.fullname" . }}-timescale:{{ .Values.timescale.service.port }}/{{ .Values.timescale.postgres.database }}"
             - name: DATASOURCES_DEFAULT_USERNAME
-              value: { { .Values.timescale.postgres.user | quote } }
+              value: {{ .Values.timescale.postgres.user | quote }}
             - name: DATASOURCES_DEFAULT_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: { { include "qalipsis.fullname" . } }-timescale
+                  name: {{ include "qalipsis.fullname" . }}-timescale
                   key: postgres-password
-            - name: LIQUIBASE_ENABLED
-              value: "true"
           resources:
-            { { - toYaml .Values.kafkaToDb.resources | nindent 12 } }
+            {{- toYaml .Values.kafkaToDb.resources | nindent 12 }}
           readinessProbe:
             httpGet:
               path: /
@@ -68,4 +66,4 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 2
             failureThreshold: 5
-  { { - end } }
+  {{- end }}

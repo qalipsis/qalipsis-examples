@@ -15,7 +15,8 @@ It delivers the following features:
 The idea consists in deploying several instances of this service, while enabling only part of them on each instance. See
 the configuration below to achieve that.
 
-NOTE: The configuration for Redis is always required.
+NOTE: The configuration for Redis and for the database (`DATASOURCES_DEFAULT_URL`, `DATASOURCES_DEFAULT_USERNAME`,
+`DATASOURCES_DEFAULT_PASSWORD`) is always required: the connection pool opens when the service starts.
 
 ## Configuration
 
@@ -122,9 +123,30 @@ through the security filter.
 
 If you want to set a key on the message published to RabbitMQ or Kafka, you can set the HTTP header "message-key".
 
+## Build
+
+The service is a build of its own, apart from the QALIPSIS examples: Micronaut 5, Kotlin 2, Gradle 9.
+Any Java from 17 up starts Gradle; Gradle itself and the service run on JDK 25, which Gradle downloads when
+it is missing (`gradle/gradle-daemon-jvm.properties` and the Kotlin toolchain).
+
+```shell
+./gradlew build     # compile and test (the tests start PostgreSQL in Docker)
+./gradlew docker    # the Docker image, a GraalVM native executable, for the architecture of this machine
+```
+
+`./gradlew docker` compiles the native executable inside the GraalVM builder image (`src/main/docker/Dockerfile`)
+and loads the image into the local Docker, as `aerisconsulting/qalipsis-demo-microservice`, tagged with the version
+of `build.gradle.kts` and `latest`. `DOCKER_PLATFORMS` selects other architectures, `DOCKER_BUILD_ARGS=--push`
+publishes them.
+
+The published image is for **linux/amd64 and linux/arm64**: the workflow *demo-microservice image*
+(`.github/workflows/demo-microservice-image.yml`, run by hand) builds each architecture on a runner of its own and
+merges them into one tag. The amd64 build cannot run emulated on Apple silicon: the GraalVM builder image needs an
+x86-64-v3 CPU, which the emulator does not provide.
+
 ## Gradle tasks to run the server
 
-Two Gradle tasks are available to have the server immediately available:
+Two Gradle tasks run the service against the services of `../distributed-system/docker-compose.yml`:
 
-* runHttpKafkaServer: Executes the service to listen on HTTP(S) and publish the data to Kafka
-* runKafkaListenerServer: Executes the service to consume the data from Kafka and save them into Elasticsearch
+* runHttpToKafkaServer: listens on HTTP(S) and publishes the data to Kafka
+* runKafkaToDbServer: consumes the data from Kafka and saves it into TimescaleDB

@@ -1,21 +1,21 @@
-{ { - if .Values.elasticsearch.enabled } }
+{{- if .Values.elasticsearch.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: { { include "qalipsis.fullname" . } }-elasticsearch
+  name: {{ include "qalipsis.fullname" . }}-elasticsearch
   labels:
     {{- include "qalipsis.labels" . | nindent 4 }}
     {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "elasticsearch") | nindent 4 }}
 spec:
-  replicas: { { .Values.elasticsearch.replicas } }
+  replicas: {{ .Values.elasticsearch.replicas }}
   selector:
     matchLabels:
-      { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "elasticsearch") | nindent 6 } }
+      {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "elasticsearch") | nindent 6 }}
   template:
     metadata:
       labels:
-        { { - include "qalipsis.labels" . | nindent 8 } }
-          { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "elasticsearch") | nindent 8 } }
+        {{- include "qalipsis.labels" . | nindent 8 }}
+          {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "elasticsearch") | nindent 8 }}
     spec:
       containers:
         - name: elasticsearch
@@ -25,13 +25,13 @@ spec:
               name: http
           env:
             - name: ES_JAVA_OPTS
-              value: { { .Values.elasticsearch.javaOpts | quote } }
+              value: {{ .Values.elasticsearch.javaOpts | quote }}
             - name: discovery.type
               value: "single-node"
             - name: bootstrap.memory_lock
               value: "true"
           resources:
-            { { - toYaml .Values.elasticsearch.resources | nindent 12 } }
+            {{- toYaml .Values.elasticsearch.resources | nindent 12 }}
           readinessProbe:
             tcpSocket:
               port: 9200
@@ -51,10 +51,10 @@ spec:
               mountPath: /usr/share/elasticsearch/data
       volumes:
         - name: data
-          { { - if .Values.elasticsearch.persistence.enabled } }
+          {{- if .Values.elasticsearch.persistence.enabled }}
           persistentVolumeClaim:
-            claimName: { { include "qalipsis.fullname" . } }-elasticsearch
+            claimName: {{ include "qalipsis.fullname" . }}-elasticsearch
           {{- else }}
           emptyDir: { }
-          { { - end } }
-  { { - end } }
+          {{- end }}
+  {{- end }}

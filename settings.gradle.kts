@@ -14,10 +14,20 @@
  * permissions and limitations under the License.
  */
 pluginManagement {
+    plugins {
+        id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+    }
+
     repositories {
         mavenLocal()
         gradlePluginPortal()
     }
+}
+
+// Gives Gradle the repository to download JDK 21 from, when it is missing: for the daemon
+// (gradle/gradle-daemon-jvm.properties) and for the Kotlin toolchain (build.gradle.kts).
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention")
 }
 
 rootProject.name = "qalipsis-examples"
@@ -25,7 +35,6 @@ rootProject.name = "qalipsis-examples"
 include(
     "hello-world",
     "cassandra",
-    "demo-microservice",
     "quickstart-http",
     "distributed-system",
     "cassandra",

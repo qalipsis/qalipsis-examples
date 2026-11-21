@@ -35,14 +35,14 @@ You will find resulting reports in `distributed-system/build/reports/qalipsis` a
 
 Alternatively, you can start the Docker compose file yourself and execute
 `gradlew :distributed-system:runQalipsisWithGui` to use the GUI from QALIPSIS, accessible at http://localhost:8400 or
-the API at http://localhost8400/api.
+the API at http://localhost:8400/api.
 
 ## Links
 
-* [QALIPSIS GUI](http://localhost8400)
-* [QALIPSIS API](http://localhost8400/api)
+* [QALIPSIS GUI](http://localhost:8400)
+* [QALIPSIS API](http://localhost:8400/api)
 * [Elasticsearch](http://localhost:9200)
 * [Kibana](http://localhost:5601)
-* [Redpanda Console](http://localhost:28080)
+* [Kafka console](http://localhost:28080) (Redpanda Console, on Apache Kafka)
 * [PgAdmin](http://localhost:25433)
 * [InfluxDB](http://localhost:18086)

@@ -48,8 +48,7 @@ internal class JdbcServiceIntegrationTest : TestPropertyProvider {
             "messaging.kafka.enabled" to "false",
             "datasources.default.url" to pgsql.jdbcUrl,
             "datasources.default.username" to pgsql.username,
-            "datasources.default.password" to pgsql.password,
-            "liquibase.enabled" to "true"
+            "datasources.default.password" to pgsql.password
         )
     }
 

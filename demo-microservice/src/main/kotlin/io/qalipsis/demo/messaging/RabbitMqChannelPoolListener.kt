@@ -20,8 +20,9 @@ internal class RabbitMqChannelPoolListener : ChannelInitializer() {
      * Initializes the channel.
      *
      * @param channel Channel
+     * @param name name of the channel pool
      */
-    override fun initialize(channel: Channel) {
+    override fun initialize(channel: Channel, name: String) {
         channel.exchangeDeclare(queueName, "direct", true)
 
         val queue = channel.queueDeclare(queueName, true, false, true, emptyMap()).queue

@@ -1,8 +1,8 @@
-{ { - if .Values.timescale.enabled } }
+{{- if .Values.timescale.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: { { include "qalipsis.fullname" . } }-timescale-init
+  name: {{ include "qalipsis.fullname" . }}-timescale-init
   labels:
     {{- include "qalipsis.labels" . | nindent 4 }}
     {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "timescale") | nindent 4 }}
@@ -26,4 +26,4 @@ data:
 
     echo "Creating the required schemas for QALIPSIS"
     psql -U "${POSTGRES_USER}" "${POSTGRES_DB}" -f ${create_sql}
-  { { - end } }
+  {{- end }}

@@ -1,27 +1,16 @@
 package io.qalipsis.demo.security
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.micronaut.context.annotation.Value
 import io.micronaut.http.HttpRequest
-import io.micronaut.security.authentication.AuthenticationException
-import io.micronaut.security.authentication.AuthenticationFailed
-import io.micronaut.security.authentication.AuthenticationProvider
+import io.micronaut.security.authentication.AuthenticationFailureReason
 import io.micronaut.security.authentication.AuthenticationRequest
 import io.micronaut.security.authentication.AuthenticationResponse
-import io.reactivex.rxjava3.core.BackpressureStrategy
-import io.reactivex.rxjava3.core.Flowable
+import io.micronaut.security.authentication.provider.HttpRequestAuthenticationProvider
 import jakarta.inject.Singleton
-import mu.KotlinLogging
-import org.reactivestreams.Publisher
 
-/**
- * User authentication provider.
- *
- * This class provides user authentication by username and password for HTTP requests.
- *
- * @author Alexander Sosnovsky
- */
 @Singleton
-class AuthenticationProviderUserPassword : AuthenticationProvider {
+class AuthenticationProviderUserPassword : HttpRequestAuthenticationProvider<HttpRequest<*>> {
 
     @Value("\${app.security.login}")
     lateinit var login: String
@@ -30,26 +19,18 @@ class AuthenticationProviderUserPassword : AuthenticationProvider {
     lateinit var password: String
 
     /**
-     * Authenticates a user.
-     *
-     * @param httpRequest HTTP request
-     * @param authenticationRequest Authentication request
-     * @return Authentication response
+     * Authenticates the single user of the configuration.
      */
     override fun authenticate(
-        httpRequest: HttpRequest<*>?,
-        authenticationRequest: AuthenticationRequest<*, *>
-    ): Publisher<AuthenticationResponse> {
-        return Flowable.create({ emitter ->
-            if (authenticationRequest.identity == login && authenticationRequest.secret == password) {
-                emitter.onNext(AuthenticationResponse.success(authenticationRequest.identity as String))
-                emitter.onComplete()
-                log.debug { "New login : ${authenticationRequest.identity}" }
-            } else {
-                emitter.onError(AuthenticationException(AuthenticationFailed()))
-            }
-        }, BackpressureStrategy.ERROR)
-    }
+        requestContext: HttpRequest<HttpRequest<*>>?,
+        authRequest: AuthenticationRequest<String, String>
+    ): AuthenticationResponse =
+        if (authRequest.identity == login && authRequest.secret == password) {
+            log.debug { "New login : ${authRequest.identity}" }
+            AuthenticationResponse.success(authRequest.identity)
+        } else {
+            AuthenticationResponse.failure(AuthenticationFailureReason.CREDENTIALS_DO_NOT_MATCH)
+        }
 
     companion object {
 

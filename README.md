@@ -133,6 +133,26 @@ QALIPSIS provides IT Operations teams solutions to:
 * Generate exceptional results on virtual engines, containers and conventional development machines.
 * Allow for implementation and integration of verifications in their standard DevOps workflow.
 
+## Running the examples
+
+You need:
+
+- **Any JDK, 8 or later, to start Gradle**, including JDK 22, 25 or newer. Gradle and the examples then run
+  on **JDK 21**: the Gradle daemon (`gradle/gradle-daemon-jvm.properties`) and the Kotlin toolchain
+  (`jvmToolchain(21)` in `build.gradle.kts`) ask for it, and Gradle downloads it into `~/.gradle/jdks` when it
+  is missing (from the Foojay API, declared in `settings.gradle.kts`). So a newer JDK on your machine never
+  meets an older Gradle or Kotlin. The first build needs internet for it.
+- **Docker with Docker Compose v2**, for the examples that start their test environment from their
+  `docker-compose.yml` (`dockerComposeUp` before the scenarios, `dockerComposeDown` after).
+
+```shell
+./gradlew assemble                       # build every example
+./gradlew :kafka:qalipsisRunAllScenarios # run the scenarios of one example, with its test environment
+```
+
+`demo-microservice`, the system under test of `distributed-system`, is a build of its own (Micronaut 5, Gradle 9):
+see its README.
+
 ## Official website
 
 You can learn more about QALIPSIS under https://qalipsis.io.

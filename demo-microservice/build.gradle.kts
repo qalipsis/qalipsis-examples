@@ -1,20 +1,25 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
-    kotlin("jvm")
-    kotlin("kapt")
-    kotlin("plugin.allopen") version "1.9.20"
-
-    id("io.micronaut.minimal.application") version "3.6.2"
-    id("io.micronaut.graalvm") version "3.6.2"
-    id("io.micronaut.aot") version "3.6.2"
-    id("io.micronaut.test-resources") version "3.5.3"
-
-    id("com.palantir.docker")
-    `maven-publish`
+    kotlin("jvm") version "2.3.21"
+    kotlin("plugin.allopen") version "2.3.21"
+    id("com.google.devtools.ksp") version "2.3.7"
+    id("io.micronaut.application") version "5.0.2"
+    id("io.micronaut.aot") version "5.0.2"
 }
 
-version = "0.1.1"
+group = "io.qalipsis"
+version = "0.2.0"
+description = "QALIPSIS demo microservice: HTTP to Kafka or RabbitMQ, and Kafka or RabbitMQ to TimescaleDB"
+
+repositories {
+    mavenCentral()
+}
+
+kotlin {
+    jvmToolchain(25)
+    compilerOptions {
+        javaParameters = true
+    }
+}
 
 allOpen {
     annotations(
@@ -25,165 +30,104 @@ allOpen {
     )
 }
 
-// Configure both compileKotlin and compileTestKotlin.
-tasks.withType<KotlinCompile>().configureEach {
-    kotlinOptions {
-        javaParameters = true
-    }
-}
-
-val kotlinVersion: String by project
-val postgresqlDriverVersion = "42.3.1"
-
-dependencies {
-    compileOnly("org.graalvm.nativeimage:svm")
-
-    kapt("io.micronaut.security:micronaut-security-annotations")
-    kapt("io.micronaut:micronaut-inject-java")
-    kapt("io.micronaut.data:micronaut-data-processor")
-    kapt("io.micronaut:micronaut-http-validation")
-
-    implementation("io.micronaut:micronaut-runtime")
-    implementation("io.micronaut.kotlin:micronaut-kotlin-runtime")
-    implementation("io.micronaut.kotlin:micronaut-kotlin-extension-functions")
-    implementation("io.micronaut.beanvalidation:micronaut-hibernate-validator")
-    implementation("io.micronaut.kotlin:micronaut-kotlin-runtime")
-    implementation("io.micronaut.security:micronaut-security-session")
-    implementation("javax.annotation:javax.annotation-api")
-    implementation("org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}")
-    implementation("io.micronaut:micronaut-validation")
-    implementation("io.micronaut.redis:micronaut-redis-lettuce")
-    implementation("io.micronaut.kotlin:micronaut-kotlin-extension-functions")
-    implementation("io.micronaut.kafka:micronaut-kafka")
-    implementation("io.micronaut.rabbitmq:micronaut-rabbitmq")
-    implementation("io.micronaut.rxjava3:micronaut-rxjava3")
-    implementation("io.micronaut.data:micronaut-data-jdbc")
-    implementation("io.micronaut.sql:micronaut-jdbc-hikari")
-    implementation("org.postgresql:postgresql:$postgresqlDriverVersion")
-    implementation("io.micronaut.liquibase:micronaut-liquibase")
-    implementation("io.github.microutils:kotlin-logging:2.1.23")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-    implementation("org.bouncycastle:bcprov-jdk15on:1.64")
-    implementation("org.bouncycastle:bcprov-ext-jdk15on:1.64")
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.64")
-
-    runtimeOnly("ch.qos.logback:logback-classic")
-    runtimeOnly("org.fusesource.jansi:jansi:2.4.1")
-
-    testImplementation("io.micronaut.rxjava3:micronaut-rxjava3-http-client")
-    // Testcontainers 1.21.4+ negotiates the Docker API version required by recent Docker engines.
-    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.4"))
-    testImplementation("io.mockk:mockk:1.13.11")
-    testImplementation("org.testcontainers:junit-jupiter")
-    testImplementation("com.willowtreeapps.assertk:assertk:0.+")
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("io.micronaut.test:micronaut-test-junit5")
-    testImplementation("org.testcontainers:junit-jupiter")
-    testImplementation("org.testcontainers:postgresql")
-    testImplementation("org.testcontainers:kafka")
-    testImplementation("org.testcontainers:rabbitmq")
-    testImplementation("org.testcontainers:testcontainers")
-
-    configurations.all {
-        resolutionStrategy {
-            force("ch.qos.logback:logback-classic:1.4.8")
-            force("ch.qos.logback:logback-core:1.4.8")
-        }
-    }
-}
-
-graalvmNative.toolchainDetection.set(false)
 micronaut {
+    version("5.2.7")
     runtime("netty")
     testRuntime("junit5")
     processing {
         incremental(true)
-        annotations("io.qalipsis.*")
+        annotations("io.qalipsis.demo.*")
     }
     aot {
-        // Please review carefully the optimizations enabled below
-        // Check https://micronaut-projects.github.io/micronaut-aot/latest/guide/ for more details
-        optimizeServiceLoading.set(true)
-        convertYamlToJava.set(true)
-        precomputeOperations.set(true)
-        cacheEnvironment.set(true)
-        optimizeClassLoading.set(true)
-        deduceEnvironment.set(true)
-        optimizeNetty.set(true)
+        // See https://micronaut-projects.github.io/micronaut-aot/latest/guide/ before changing them.
+        optimizeServiceLoading = true
+        convertYamlToJava = true
+        precomputeOperations = true
+        cacheEnvironment = true
+        optimizeClassLoading = true
+        deduceEnvironment = true
+        optimizeNetty = true
     }
-    testResources {
-        sharedServer.set(true)
-    }
-}
-
-tasks {
-    test {
-        // JDK 16 enforces strong encapsulation of standard modules. In practice this mean overriding accessibility
-        // modifiers in JDK classes (for example, privateMember.setAccessible(true)) is forbidden.
-        // To allow mocking of the relevant classes, additional arguments are required.
-        jvmArgs(
-            "--add-opens", "java.base/java.time=ALL-UNNAMED",
-            "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED"
-        )
-    }
-
-    withType<Jar> {
-        isZip64 = true
-    }
-
-    val collectJars = register("collectJars") {
-        group = "build"
-
-        doLast {
-            val target = project.layout.buildDirectory.dir("classpath/libs").get().asFile
-            if (!target.isDirectory) {
-                target.deleteRecursively()
-            }
-            project.mkdir(target)
-            configurations.runtimeClasspath.get().filter { it.name.endsWith("jar") }.forEach {
-                it.copyTo(File(target, it.name), true)
-            }
-        }
-    }
-
-    named("dockerPrepare").configure {
-        dependsOn(collectJars)
-    }
-
 }
 
 application {
-    // Keep using mainClassName for ShadowJar.
-    mainClass.set("io.qalipsis.demo.QalipsisDemoMicroserviceKt")
-    applicationDefaultJvmArgs = listOf("-noverify", "-Dcom.sun.management.jmxremote", "-Dmicronaut.env.deduction=false")
-    this.ext["workingDir"] = projectDir
+    mainClass = "io.qalipsis.demo.QalipsisDemoMicroserviceKt"
 }
 
-task<JavaExec>("runHttpToKafkaServer") {
-    group = "application"
-    description = "Starts the microservice as a HTTP Server that pushes data to Kafka"
-    mainClass.set("io.qalipsis.demo.QalipsisDemoMicroserviceKt")
-    maxHeapSize = "512m"
-    jvmArgs("-Dmicronaut.env.deduction=false")
-    environment = mapOf(
+graalvmNative {
+    toolchainDetection = false
+    binaries.named("main") {
+        // The default amd64 target (x86-64-v3) needs AVX2: old CPUs and Rosetta could not run the image.
+        buildArgs.add("-march=compatibility")
+    }
+}
+
+val bouncyCastleVersion = "1.87"
+
+dependencies {
+    ksp("io.micronaut.security:micronaut-security-annotations")
+    ksp("io.micronaut.data:micronaut-data-processor")
+    ksp("io.micronaut.serde:micronaut-serde-processor")
+    ksp("io.micronaut.validation:micronaut-validation-processor")
+    ksp("io.micronaut:micronaut-http-validation")
+
+    implementation("io.micronaut.kotlin:micronaut-kotlin-runtime")
+    implementation("io.micronaut.kotlin:micronaut-kotlin-extension-functions")
+    implementation("io.micronaut.serde:micronaut-serde-jackson")
+    implementation("io.micronaut.validation:micronaut-validation")
+    implementation("io.micronaut.security:micronaut-security-session")
+    implementation("io.micronaut.redis:micronaut-redis-lettuce")
+    implementation("io.micronaut.kafka:micronaut-kafka")
+    implementation("io.micronaut.rabbitmq:micronaut-rabbitmq")
+    implementation("io.micronaut.data:micronaut-data-jdbc")
+    implementation("io.micronaut.sql:micronaut-jdbc-hikari")
+    implementation("io.github.oshai:kotlin-logging-jvm:8.0.7")
+    // The self-signed certificate of the HTTPS server (micronaut.server.ssl.build-self-signed).
+    implementation("org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion")
+
+    implementation("org.postgresql:postgresql:42.7.14")
+    runtimeOnly("ch.qos.logback:logback-classic")
+    runtimeOnly("org.yaml:snakeyaml")
+
+    testImplementation("io.micronaut:micronaut-http-client")
+    testImplementation("io.mockk:mockk:1.14.11")
+    testImplementation("com.willowtreeapps.assertk:assertk:0.28.1")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+    testImplementation("org.testcontainers:testcontainers-postgresql")
+    testImplementation("org.testcontainers:testcontainers")
+}
+
+tasks.test {
+    jvmArgs("--add-opens", "java.base/java.time=ALL-UNNAMED", "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED")
+}
+
+// Runs the service against the distributed example (../distributed-system/docker-compose.yml).
+fun registerServer(name: String, text: String, env: Map<String, Any>, vararg arguments: String) =
+    tasks.register<JavaExec>(name) {
+        group = "application"
+        description = text
+        mainClass = application.mainClass
+        maxHeapSize = "512m"
+        jvmArgs("-Dmicronaut.env.deduction=false")
+        environment = env
+        args(*arguments)
+        classpath = sourceSets["main"].runtimeClasspath
+        workingDir = projectDir
+    }
+
+registerServer(
+    "runHttpToKafkaServer", "Starts the microservice as an HTTP server that pushes the data to Kafka",
+    mapOf(
         "KAFKA_ENABLED" to true,
         "MESSAGING_KAFKA_PUBLISHER_ENABLED" to true,
-        "KAFKA_BOOTSTRAP_SERVERS" to "localhost:9093",
+        "KAFKA_BOOTSTRAP_SERVERS" to "localhost:19092",
         "REDIS_URI" to "redis://localhost:6379",
-        //"SERVER_HTTP_VERSION" to "1.1"
     )
-    classpath = sourceSets["main"].runtimeClasspath
-    workingDir = projectDir
-}
+)
 
-task<JavaExec>("runKafkaToDbServer") {
-    group = "application"
-    description = "Starts the microservice as a Kafka listener to save data into Timescale"
-    mainClass.set("io.qalipsis.demo.QalipsisDemoMicroserviceKt")
-    maxHeapSize = "512m"
-    jvmArgs("-Dmicronaut.env.deduction=false")
-    environment = mapOf(
+registerServer(
+    "runKafkaToDbServer", "Starts the microservice as a Kafka listener that saves the data into TimescaleDB",
+    mapOf(
         "KAFKA_ENABLED" to true,
         "MESSAGING_KAFKA_LISTENER_ENABLED" to true,
         "KAFKA_BOOTSTRAP_SERVERS" to "localhost:19092",
@@ -191,33 +135,28 @@ task<JavaExec>("runKafkaToDbServer") {
         "DATASOURCES_DEFAULT_URL" to "jdbc:postgresql://localhost:25432/qalipsis",
         "DATASOURCES_DEFAULT_USERNAME" to "qalipsis_demo",
         "DATASOURCES_DEFAULT_PASSWORD" to "qalipsis",
-        "LIQUIBASE_ENABLED" to "true",
-    )
-    args("--micronaut.server.port=-1", "--micronaut.ssl.port=-1")
-    classpath = sourceSets["main"].runtimeClasspath
-    workingDir = projectDir
-}
+    ),
+    "--micronaut.server.port=-1", "--micronaut.ssl.port=-1"
+)
 
+// The Docker image: a GraalVM native executable, built inside the builder image (src/main/docker/Dockerfile).
+// By default for the architecture of this machine, loaded into the local Docker. DOCKER_PLATFORMS selects others,
+// DOCKER_BUILD_ARGS=--push publishes them. An amd64 image needs an x86-64-v3 CPU to build (no emulation on Apple
+// silicon): the workflow .github/workflows/demo-microservice-image.yml builds both on their own runners.
 val dockerImage = "aerisconsulting/qalipsis-demo-microservice"
-docker {
-    name = dockerImage
 
-    setDockerfile(project.layout.projectDirectory.file("src/main/docker/Dockerfile").asFile)
-
-    val jarFile = tasks.getByName<org.gradle.jvm.tasks.Jar>("jar").archiveFile.get().asFile
-    files(
-        project.layout.projectDirectory.dir("src/main/docker/resources"),
-        project.layout.buildDirectory.dir("classpath"),
-        // The task rather than its file, so that the jar is built before being copied.
-        tasks.named("jar")
+tasks.register<Exec>("docker") {
+    group = "docker"
+    description = "Builds the native Docker image $dockerImage:$version."
+    val hostArch = if (System.getProperty("os.arch") in listOf("aarch64", "arm64")) "arm64" else "amd64"
+    val platforms = System.getenv("DOCKER_PLATFORMS") ?: "linux/$hostArch"
+    val extra = System.getenv("DOCKER_BUILD_ARGS")?.split(" ")?.filter(String::isNotBlank)
+        ?: if (platforms.contains(",")) emptyList() else listOf("--load")
+    commandLine(
+        listOf(
+            "docker", "buildx", "build", "--platform", platforms, "--pull",
+            "--tag", "$dockerImage:$version", "--tag", "$dockerImage:latest",
+            "--file", "src/main/docker/Dockerfile"
+        ) + extra + listOf(".")
     )
-    buildx(true)
-    if (System.getenv("GITHUB_ACTIONS") != "true") {
-        // On Github, the multiplatform build throws the error "docker exporter does not currently support exporting manifest lists".
-        platform("linux/amd64", "linux/arm64")
-    }
-
-    buildArgs(mapOf("JAR_NAME" to jarFile.name, "START_CLASS" to application.mainClass.get()))
-    noCache(false)
-    pull(true)
 }

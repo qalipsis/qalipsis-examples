@@ -1,21 +1,21 @@
-{ { - if .Values.redis.enabled } }
+{{- if .Values.redis.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: { { include "qalipsis.fullname" . } }-redis
+  name: {{ include "qalipsis.fullname" . }}-redis
   labels:
     {{- include "qalipsis.labels" . | nindent 4 }}
     {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "redis") | nindent 4 }}
 spec:
-  replicas: { { .Values.redis.replicas } }
+  replicas: {{ .Values.redis.replicas }}
   selector:
     matchLabels:
-      { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "redis") | nindent 6 } }
+      {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "redis") | nindent 6 }}
   template:
     metadata:
       labels:
-        { { - include "qalipsis.labels" . | nindent 8 } }
-          { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "redis") | nindent 8 } }
+        {{- include "qalipsis.labels" . | nindent 8 }}
+          {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "redis") | nindent 8 }}
     spec:
       containers:
         - name: redis
@@ -24,7 +24,7 @@ spec:
             - containerPort: 6379
               name: redis
           resources:
-            { { - toYaml .Values.redis.resources | nindent 12 } }
+            {{- toYaml .Values.redis.resources | nindent 12 }}
           readinessProbe:
             exec:
               command: [ "redis-cli", "ping" ]
@@ -39,4 +39,4 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 2
             failureThreshold: 5
-  { { - end } }
+  {{- end }}

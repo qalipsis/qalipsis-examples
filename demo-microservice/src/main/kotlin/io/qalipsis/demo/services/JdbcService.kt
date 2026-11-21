@@ -6,10 +6,10 @@ import io.micronaut.validation.Validated
 import io.qalipsis.demo.entity.DeviceState
 import jakarta.annotation.PostConstruct
 import jakarta.inject.Singleton
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.postgresql.util.PSQLException
 import java.sql.Connection
-import javax.validation.Valid
+import jakarta.validation.Valid
 
 @Singleton
 @Validated
@@ -18,10 +18,25 @@ internal class JdbcService(
     @Property(name = "datasources.default.schema") private val schema: String
 ) {
 
+    /**
+     * Creates the table of the device states when it is missing, then turns it into a TimescaleDB hypertable.
+     * Plain SQL rather than Liquibase, which a native image could not run without reflection data.
+     */
     @PostConstruct
     fun prepareHyperTable() {
         transactionManager.executeWrite {
             it.connection.createStatement().use {
+                it.execute(
+                    """CREATE TABLE IF NOT EXISTS $schema.device_state (
+                        saving_timestamp BIGINT NOT NULL,
+                        device_id VARCHAR(50) NOT NULL,
+                        timestamp BIGINT NOT NULL,
+                        position_lat DECIMAL(6,3) NOT NULL,
+                        position_lon DECIMAL(6,3) NOT NULL,
+                        battery_level_percentage INT NOT NULL,
+                        message_key VARCHAR(50),
+                        PRIMARY KEY (device_id, timestamp))"""
+                )
                 try {
                     it.execute("CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;")
                     it.execute("SELECT create_hypertable('$schema.device_state', 'timestamp', chunk_time_interval => 86400000)")
@@ -37,7 +52,7 @@ internal class JdbcService(
      *
      * @param records records to save as pairs: the first member is the ID of the message, the second is the source
      */
-    fun save(@Valid records: List<Pair<String?, DeviceState>>) {
+    fun save(records: List<Pair<String?, @Valid DeviceState>>) {
         if (records.isNotEmpty()) {
             transactionManager.executeWrite {
                 it.connection.prepareStatement(

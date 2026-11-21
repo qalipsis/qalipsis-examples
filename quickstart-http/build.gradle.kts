@@ -21,7 +21,6 @@ plugins {
     id("io.qalipsis.bootstrap")
 
     id("com.github.johnrengelman.shadow") version "7.1.1"
-    id("com.palantir.docker-compose")
 }
 
 description = "Qalipsis Demo - Testing a HTTP server"

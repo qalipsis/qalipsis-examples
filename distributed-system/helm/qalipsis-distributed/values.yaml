@@ -60,37 +60,37 @@ redis:
       memory: 128Mi
       cpu: 250m
 
-## Redpanda (Kafka-compatible broker)
-redpanda:
+## Apache Kafka (single KRaft node, broker and controller)
+kafka:
   enabled: true
   image:
-    repository: docker.redpanda.com/redpandadata/redpanda
-    tag: "v24.1.3"
-  replicas: 1
+    repository: apache/kafka-native
+    tag: "4.1.2"
+  # Base64-encoded UUID of the KRaft cluster, formatted on the first start.
+  clusterId: cWFsaXBzaXMtZXhhbXBsZXM
   service:
     type: ClusterIP
-    kafkaPort: 9092
-    schemaRegistryPort: 8081
-    pandaproxyPort: 8082
-    adminPort: 9644
+    port: 9092
+    # Advertised as localhost, for QALIPSIS running outside the cluster through a port-forward.
+    externalPort: 19092
   persistence:
     enabled: true
     size: 5Gi
     storageClass: ""
   resources:
     requests:
-      memory: 512Mi
-      cpu: 500m
+      memory: 256Mi
+      cpu: 250m
     limits:
       memory: 1Gi
       cpu: 1000m
 
-## Redpanda Console
-redpandaConsole:
+## Kafka Console (Redpanda Console, which works with any Apache Kafka broker)
+kafkaConsole:
   enabled: true
   image:
     repository: docker.redpanda.com/redpandadata/console
-    tag: "v2.5.2"
+    tag: "v3.15.0"
   replicas: 1
   service:
     type: ClusterIP
@@ -176,8 +176,9 @@ httpToKafka:
 kafkaToDb:
   enabled: true
   image:
+    # Native image, for linux/amd64 and linux/arm64.
     repository: aerisconsulting/qalipsis-demo-microservice
-    tag: "0.1.1"
+    tag: "0.2.0"
   replicas: 1
   resources:
     requests:

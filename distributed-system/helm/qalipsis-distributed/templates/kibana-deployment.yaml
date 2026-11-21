@@ -1,21 +1,21 @@
-{ { - if .Values.kibana.enabled } }
+{{- if .Values.kibana.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: { { include "qalipsis.fullname" . } }-kibana
+  name: {{ include "qalipsis.fullname" . }}-kibana
   labels:
     {{- include "qalipsis.labels" . | nindent 4 }}
     {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "kibana") | nindent 4 }}
 spec:
-  replicas: { { .Values.kibana.replicas } }
+  replicas: {{ .Values.kibana.replicas }}
   selector:
     matchLabels:
-      { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "kibana") | nindent 6 } }
+      {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "kibana") | nindent 6 }}
   template:
     metadata:
       labels:
-        { { - include "qalipsis.labels" . | nindent 8 } }
-          { { - include "qalipsis.selectorLabels" (dict "Release" .Release "component" "kibana") | nindent 8 } }
+        {{- include "qalipsis.labels" . | nindent 8 }}
+          {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "kibana") | nindent 8 }}
     spec:
       initContainers:
         - name: wait-for-elasticsearch
@@ -31,7 +31,7 @@ spec:
             - name: ELASTICSEARCH_HOSTS
               value: "http://{{ include "qalipsis.fullname" . }}-elasticsearch:{{ .Values.elasticsearch.service.port }}"
           resources:
-            { { - toYaml .Values.kibana.resources | nindent 12 } }
+            {{- toYaml .Values.kibana.resources | nindent 12 }}
           readinessProbe:
             httpGet:
               path: /
@@ -48,4 +48,4 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 2
             failureThreshold: 5
-  { { - end } }
+  {{- end }}

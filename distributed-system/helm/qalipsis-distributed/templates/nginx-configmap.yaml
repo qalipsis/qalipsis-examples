@@ -1,8 +1,8 @@
-{ { - if .Values.nginx.enabled } }
+{{- if .Values.nginx.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: { { include "qalipsis.fullname" . } }-nginx
+  name: {{ include "qalipsis.fullname" . }}-nginx
   labels:
     {{- include "qalipsis.labels" . | nindent 4 }}
     {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "nginx") | nindent 4 }}
@@ -59,10 +59,10 @@ data:
         }
         {{- end }}
 
-        {{- if .Values.redpandaConsole.enabled }}
-        # Redpanda Console - http://<nginx>/redpanda-console/
-        upstream redpanda-console {
-            server {{ include "qalipsis.fullname" . }}-redpanda-console:{{ .Values.redpandaConsole.service.port }};
+        {{- if .Values.kafkaConsole.enabled }}
+        # Kafka Console - http://<nginx>/kafka-console/
+        upstream kafka-console {
+            server {{ include "qalipsis.fullname" . }}-kafka-console:{{ .Values.kafkaConsole.service.port }};
         }
         {{- end }}
 
@@ -101,8 +101,8 @@ data:
                 {{- if .Values.influxdb.enabled }}
                 <li><a href="/influxdb/">InfluxDB</a></li>
                 {{- end }}
-                {{- if .Values.redpandaConsole.enabled }}
-                <li><a href="/redpanda-console/">Redpanda Console</a></li>
+                {{- if .Values.kafkaConsole.enabled }}
+                <li><a href="/kafka-console/">Kafka Console</a></li>
                 {{- end }}
                 {{- if .Values.httpToKafka.enabled }}
                 <li><a href="/http-to-kafka/">HTTP-to-Kafka</a></li>
@@ -145,9 +145,9 @@ data:
             }
             {{- end }}
 
-            {{- if .Values.redpandaConsole.enabled }}
-            location /redpanda-console/ {
-                proxy_pass http://redpanda-console/;
+            {{- if .Values.kafkaConsole.enabled }}
+            location /kafka-console/ {
+                proxy_pass http://kafka-console/;
                 proxy_set_header Host $host;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -170,4 +170,4 @@ data:
             {{- end }}
         }
     }
-  { { - end } }
+  {{- end }}

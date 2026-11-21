@@ -7,7 +7,7 @@ import io.micronaut.configuration.kafka.annotation.Topic
 import io.micronaut.context.annotation.Requires
 import io.qalipsis.demo.entity.DeviceState
 import io.qalipsis.demo.services.JdbcService
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.apache.kafka.clients.consumer.ConsumerRecord
 
 /**

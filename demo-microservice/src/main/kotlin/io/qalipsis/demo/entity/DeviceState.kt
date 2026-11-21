@@ -1,9 +1,11 @@
 package io.qalipsis.demo.entity
 
-import javax.validation.constraints.Max
-import javax.validation.constraints.NotBlank
-import javax.validation.constraints.PositiveOrZero
+import io.micronaut.serde.annotation.Serdeable
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.PositiveOrZero
 
+@Serdeable
 data class DeviceState(
     val savingTimestamp: Long = Long.MIN_VALUE,
 

@@ -21,7 +21,9 @@ jobs:
     strategy:
       matrix:
         os: [ 'ubuntu-latest' ]
-        java: [ '21' ]
+        # The JDK that starts Gradle. Gradle and the examples always run on JDK 21 (daemon JVM criteria and
+        # Kotlin toolchain), which Gradle downloads.
+        java: [ '25' ]
 
     steps:
       - name: Checkout
@@ -33,11 +35,6 @@ jobs:
           java-version: ${{ matrix.java }}
           distribution: temurin
 
-      - name: Provide docker-compose
-        # The Gradle docker-compose plugin calls the standalone docker-compose, which the runners no longer ship.
-        run: |
-          printf '#!/bin/sh\nexec docker compose "$@"\n' | sudo tee /usr/local/bin/docker-compose > /dev/null
-          sudo chmod +x /usr/local/bin/docker-compose
           docker-compose version
 
       - name: Validate Gradle wrapper

@@ -20,7 +20,6 @@ import io.qalipsis.gradle.bootstrap.tasks.RunQalipsis
 plugins {
     id("io.qalipsis.bootstrap")
     id("com.github.johnrengelman.shadow") version "7.1.1"
-    id("com.palantir.docker-compose")
 }
 
 description = "Graphite demo. Show how to do save & poll and save & search"

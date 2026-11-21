@@ -12,12 +12,12 @@ Helm chart equivalent of `../docker-compose.yml`, deploying the full QALIPSIS di
           +--------------------+--------------------+
           |          |         |         |           |
      +----+---+ +---+---+ +--+---+ +---+------+ +--+--------+
-     | Kibana | |Elastic-| |Influx| | Redpanda | | http-to-  |
+     | Kibana | |Elastic-| |Influx| |  Kafka   | | http-to-  |
      +----+---+ |search  | |DB    | | Console  | | kafka     |
           |     +---+----+ +------+ +---+------+ +-----+-----+
           |         |                    |             |
           |         |           +--------+--------+    |
-          |         |           |    Redpanda     |<---+
+          |         |           |  Apache Kafka   |<---+
           |         |           +-----------------+
           |         |                    |
           |         |              +-----+----+    +-------+
@@ -37,15 +37,15 @@ Helm chart equivalent of `../docker-compose.yml`, deploying the full QALIPSIS di
 | `elasticsearch`        | elasticsearch    | Deployment  | PVC for data persistence                                               |
 | `kibana`               | kibana           | Deployment  | Init container waits for Elasticsearch                                 |
 | `redis`                | redis            | Deployment  | Stateless, no persistence needed                                       |
-| `redpanda`             | redpanda         | StatefulSet | VolumeClaimTemplate for broker data                                    |
-| `redpanda-console`     | redpanda-console | Deployment  | Config injected via env, waits for Redpanda                            |
+| `kafka`                | kafka            | StatefulSet | Apache Kafka native, single KRaft node; VolumeClaimTemplate for data   |
+| `kafka-console`        | kafka-console    | Deployment  | Redpanda Console, configured with `KAFKA_BROKERS`; waits for Kafka     |
 | `timescale`            | timescale        | StatefulSet | VolumeClaimTemplate + init ConfigMap                                   |
 | `pgadmin`              | pgadmin          | Deployment  | servers.json via ConfigMap                                             |
-| `http-to-kafka`        | http-to-kafka    | Deployment  | Waits for Redpanda                                                     |
-| `kafka-to-db`          | kafka-to-db      | Deployment  | Waits for Redis, Redpanda, TimescaleDB                                 |
+| `http-to-kafka`        | http-to-kafka    | Deployment  | Waits for Kafka                                                        |
+| `kafka-to-db`          | kafka-to-db      | Deployment  | Native image; waits for Redis, Kafka, TimescaleDB                      |
 | `influxdb`             | influxdb         | Deployment  | PVC for data persistence                                               |
 | `healthy_checker`      | *(removed)*      | -           | Replaced by K8s readiness/liveness probes                              |
-| *(new)*                | nginx            | Deployment  | Reverse proxy to Kibana, ES, InfluxDB, Redpanda Console, HTTP-to-Kafka |
+| *(new)*                | nginx            | Deployment  | Reverse proxy to Kibana, ES, InfluxDB, Kafka Console, HTTP-to-Kafka    |
 
 ### NGINX Reverse Proxy
 
@@ -58,7 +58,7 @@ deployed, the following paths are available:
 | `/kibana/`           | Kibana           | Kibana dashboard (WebSocket)    |
 | `/elasticsearch/`    | Elasticsearch    | Elasticsearch REST API          |
 | `/influxdb/`         | InfluxDB         | InfluxDB HTTP API and UI        |
-| `/redpanda-console/` | Redpanda Console | Redpanda Console UI (WebSocket) |
+| `/kafka-console/`    | Kafka Console    | Kafka Console UI (WebSocket)    |
 | `/http-to-kafka/`    | HTTP-to-Kafka    | HTTP-to-Kafka bridge API        |
 
 The NGINX service is exposed as `NodePort` by default. Change to `LoadBalancer` for cloud environments:
@@ -75,6 +75,9 @@ helm install my-release . --set nginx.service.type=LoadBalancer
 - **Bind-mounted config files** become **ConfigMaps**.
 - **Passwords** are stored in **Secrets** (base64-encoded in templates, sourced from `values.yaml`).
 - **Port mappings** become **Services** (ClusterIP by default; switch to NodePort/LoadBalancer for external access).
+- **Kafka** keeps the listeners of `docker-compose.yml`: `INTERNAL` (port 9092) for the pods of the release, `EXTERNAL`
+  (port 19092) advertised as `localhost:19092`, for QALIPSIS running outside the cluster through
+  `kubectl port-forward svc/<release>-qalipsis-distributed-kafka 19092:19092`.
 
 ## Prerequisites
 
@@ -130,11 +133,16 @@ helm install my-release . -f my-custom-values.yaml
 | `redis.enabled`                  | `true`                                       | Deploy Redis                         |
 | `redis.image.repository`         | `redis`                                      | Image repository                     |
 | `redis.image.tag`                | `latest`                                     | Image tag                            |
-| `redpanda.enabled`               | `true`                                       | Deploy Redpanda broker               |
-| `redpanda.image.repository`      | `docker.redpanda.com/.../redpanda`           | Image repository                     |
-| `redpanda.image.tag`             | `v24.1.3`                                    | Image tag                            |
-| `redpanda.persistence.size`      | `5Gi`                                        | Broker data PVC size                 |
-| `redpandaConsole.enabled`        | `true`                                       | Deploy Redpanda Console              |
+| `kafka.enabled`                  | `true`                                       | Deploy the Apache Kafka broker       |
+| `kafka.image.repository`         | `apache/kafka-native`                        | Image repository                     |
+| `kafka.image.tag`                | `4.1.2`                                      | Image tag                            |
+| `kafka.clusterId`                | `cWFsaXBzaXMtZXhhbXBsZXM`                    | KRaft cluster ID                     |
+| `kafka.service.port`             | `9092`                                       | Listener for the pods of the release |
+| `kafka.service.externalPort`     | `19092`                                      | Listener advertised as `localhost`   |
+| `kafka.persistence.size`         | `5Gi`                                        | Broker data PVC size                 |
+| `kafkaConsole.enabled`           | `true`                                       | Deploy the Kafka Console             |
+| `kafkaConsole.image.repository`  | `docker.redpanda.com/.../console`            | Image repository (Redpanda Console)  |
+| `kafkaConsole.image.tag`         | `v3.15.0`                                    | Image tag                            |
 | `timescale.enabled`              | `true`                                       | Deploy TimescaleDB                   |
 | `timescale.image.repository`     | `timescale/timescaledb`                      | Image repository                     |
 | `timescale.image.tag`            | `latest-pg16`                                | Image tag                            |
@@ -147,7 +155,7 @@ helm install my-release . -f my-custom-values.yaml
 | `httpToKafka.kafka.topic`        | `http-request`                               | Target Kafka topic                   |
 | `kafkaToDb.enabled`              | `true`                                       | Deploy Kafka-to-DB service           |
 | `kafkaToDb.image.repository`     | `aerisconsulting/qalipsis-demo-microservice` | Image repository                     |
-| `kafkaToDb.image.tag`            | `0.1.1`                                      | Image tag                            |
+| `kafkaToDb.image.tag`            | `0.2.0`                                      | Image tag (native, amd64 and arm64)  |
 | `influxdb.enabled`               | `true`                                       | Deploy InfluxDB                      |
 | `influxdb.init.org`              | `qalipsis`                                   | InfluxDB organization                |
 | `influxdb.init.bucket`           | `iot`                                        | InfluxDB bucket                      |
@@ -202,7 +210,7 @@ kubectl logs <pod-name> --previous              # logs from previous crash
   ```bash
   helm upgrade my-release . \
     --set elasticsearch.persistence.enabled=false \
-    --set redpanda.persistence.enabled=false \
+    --set kafka.persistence.enabled=false \
     --set timescale.persistence.enabled=false \
     --set influxdb.persistence.enabled=false
   ```
@@ -213,7 +221,7 @@ kubectl logs <pod-name> --previous              # logs from previous crash
 - **Fix**: Check which init container is blocked:
   ```bash
   kubectl logs <pod-name> -c wait-for-elasticsearch
-  kubectl logs <pod-name> -c wait-for-redpanda
+  kubectl logs <pod-name> -c wait-for-kafka
   kubectl logs <pod-name> -c wait-for-dependencies
   ```
   Then check the dependency pod:
@@ -293,7 +301,7 @@ kubectl port-forward svc/my-release-qalipsis-distributed-nginx 8080:80
 #   http://localhost:8080/kibana/            -> Kibana
 #   http://localhost:8080/elasticsearch/     -> Elasticsearch API
 #   http://localhost:8080/influxdb/          -> InfluxDB
-#   http://localhost:8080/redpanda-console/  -> Redpanda Console
+#   http://localhost:8080/kafka-console/     -> Kafka Console
 #   http://localhost:8080/http-to-kafka/     -> HTTP-to-Kafka
 ```
 
@@ -302,7 +310,8 @@ kubectl port-forward svc/my-release-qalipsis-distributed-nginx 8080:80
 ```bash
 kubectl port-forward svc/my-release-qalipsis-distributed-elasticsearch 9200:9200
 kubectl port-forward svc/my-release-qalipsis-distributed-kibana 5601:5601
-kubectl port-forward svc/my-release-qalipsis-distributed-redpanda-console 28080:8080
+kubectl port-forward svc/my-release-qalipsis-distributed-kafka-console 28080:8080
+kubectl port-forward svc/my-release-qalipsis-distributed-kafka 19092:19092
 kubectl port-forward svc/my-release-qalipsis-distributed-pgadmin 25433:80
 kubectl port-forward svc/my-release-qalipsis-distributed-influxdb 18086:8086
 kubectl port-forward svc/my-release-qalipsis-distributed-http-to-kafka 18443:8443
@@ -421,10 +430,10 @@ helm/qalipsis-distributed/
     kibana-service.yaml                   # Kibana Service
     redis-deployment.yaml                 # Redis Deployment
     redis-service.yaml                    # Redis Service
-    redpanda-statefulset.yaml             # Redpanda StatefulSet
-    redpanda-service.yaml                 # Redpanda Service
-    redpanda-console-deployment.yaml      # Redpanda Console Deployment
-    redpanda-console-service.yaml         # Redpanda Console Service
+    kafka-statefulset.yaml                # Apache Kafka StatefulSet
+    kafka-service.yaml                    # Apache Kafka Service
+    kafka-console-deployment.yaml         # Kafka Console Deployment
+    kafka-console-service.yaml            # Kafka Console Service
     timescale-statefulset.yaml            # TimescaleDB StatefulSet
     timescale-service.yaml                # TimescaleDB Service
     timescale-configmap.yaml              # TimescaleDB init scripts

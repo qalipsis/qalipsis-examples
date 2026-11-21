@@ -1,8 +1,8 @@
-{ { - if and .Values.elasticsearch.enabled .Values.elasticsearch.persistence.enabled } }
+{{- if and .Values.elasticsearch.enabled .Values.elasticsearch.persistence.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: { { include "qalipsis.fullname" . } }-elasticsearch
+  name: {{ include "qalipsis.fullname" . }}-elasticsearch
   labels:
     {{- include "qalipsis.labels" . | nindent 4 }}
     {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "elasticsearch") | nindent 4 }}
@@ -11,8 +11,8 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: { { .Values.elasticsearch.persistence.size } }
-  { { - if .Values.elasticsearch.persistence.storageClass } }
-  storageClassName: { { .Values.elasticsearch.persistence.storageClass } }
-  { { - end } }
-  { { - end } }
+      storage: {{ .Values.elasticsearch.persistence.size }}
+  {{- if .Values.elasticsearch.persistence.storageClass }}
+  storageClassName: {{ .Values.elasticsearch.persistence.storageClass }}
+  {{- end }}
+  {{- end }}

@@ -1,0 +1,18 @@
+{{- if .Values.kafkaConsole.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "qalipsis.fullname" . }}-kafka-console
+  labels:
+    {{- include "qalipsis.labels" . | nindent 4 }}
+    {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "kafka-console") | nindent 4 }}
+spec:
+  type: {{ .Values.kafkaConsole.service.type }}
+  ports:
+    - port: {{ .Values.kafkaConsole.service.port }}
+      targetPort: 8080
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "kafka-console") | nindent 4 }}
+  {{- end }}

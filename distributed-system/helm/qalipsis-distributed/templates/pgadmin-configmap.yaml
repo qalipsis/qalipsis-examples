@@ -1,8 +1,8 @@
-{ { - if .Values.pgadmin.enabled } }
+{{- if .Values.pgadmin.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: { { include "qalipsis.fullname" . } }-pgadmin
+  name: {{ include "qalipsis.fullname" . }}-pgadmin
   labels:
     {{- include "qalipsis.labels" . | nindent 4 }}
     {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "pgadmin") | nindent 4 }}
@@ -13,15 +13,12 @@ data:
         "QALIPSIS": {
           "Name": "TimescaleDB",
           "Group": "qalipsis",
-          "Host": "{{ include "
-          qalipsis.fullname
-          " . }}-timescale",
-          "Port": {{
-      .Values.timescale.service.port}},
-    "MaintenanceDB": {{.Values.timescale.postgres.database | quote}},
-    "Username": {{.Values.timescale.postgres.user | quote}},
-    "SSLMode": "disable"
+          "Host": "{{ include "qalipsis.fullname" . }}-timescale",
+          "Port": {{ .Values.timescale.service.port }},
+          "MaintenanceDB": {{ .Values.timescale.postgres.database | quote }},
+          "Username": {{ .Values.timescale.postgres.user | quote }},
+          "SSLMode": "disable"
+        }
+      }
     }
-    }
-    }
-  { { - end } }
+{{- end }}

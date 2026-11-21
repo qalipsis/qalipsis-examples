@@ -129,12 +129,6 @@ datasources:
     schema: public
     schema-generate: none
 
-liquibase:
-  enabled: false
-  datasources:
-    default:
-      change-log: 'classpath:db/liquibase-changelog.xml'
-      liquibase-schema: public
 
 endpoints.health:
   rabbitmq.enabled: false

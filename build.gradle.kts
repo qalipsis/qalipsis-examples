@@ -23,8 +23,6 @@ plugins {
     id("io.qalipsis.bootstrap") version "0.1.6"
 
     id("nebula.maven-publish") version "18.4.0"
-    id("com.palantir.docker") version "0.36.0" apply false
-    id("com.palantir.docker-compose") version "0.36.0" apply false
     id("com.github.jk1.dependency-license-report") version "1.17"
 }
 
@@ -49,7 +47,7 @@ val javaVersion = 21
 
 tasks.withType<Wrapper> {
     distributionType = Wrapper.DistributionType.BIN
-    gradleVersion = "8.5"
+    gradleVersion = "8.14.3"
 }
 
 allprojects {
@@ -133,6 +131,26 @@ allprojects {
                 archives(findByName("testFixturesJavadoc") as Jar)
                 archives(findByName("testFixturesJar") as Jar)
             }
+        }
+    }
+
+    // The test environment of an example: its docker-compose.yml, started before its scenarios run and
+    // stopped after. Plain Docker Compose, which replaces the unmaintained Palantir plugin (it does not run
+    // on Gradle 8.13 and later); the task names are unchanged.
+    if (project.file("docker-compose.yml").isFile) {
+        tasks.register<Exec>("dockerComposeUp") {
+            group = "docker"
+            description = "Starts the services of docker-compose.yml."
+            workingDir = projectDir
+            // Without --wait: the examples wait with a one-shot "healthiness checker" container, which
+            // depends on the healthy services and exits, and which --wait would report as a failure.
+            commandLine("docker", "compose", "up", "--detach")
+        }
+        tasks.register<Exec>("dockerComposeDown") {
+            group = "docker"
+            description = "Stops and removes the services of docker-compose.yml."
+            workingDir = projectDir
+            commandLine("docker", "compose", "down")
         }
     }
 
