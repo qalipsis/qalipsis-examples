@@ -16,7 +16,8 @@ env:
 
 jobs:
   build:
-    timeout-minutes: 30
+    # The native image of demo-microservice takes a large part of it.
+    timeout-minutes: 60
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -27,7 +28,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
 
       - name: Set up JDK
         uses: actions/setup-java@v4 # https://github.com/actions/setup-java
@@ -35,16 +36,16 @@ jobs:
           java-version: ${{ matrix.java }}
           distribution: temurin
 
-          docker-compose version
-
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@v1.0.4
 
+      # demo-microservice is a build of its own; its native image is used by the distributed example.
       - name: Create demo service
         if: always()
         uses: gradle/gradle-build-action@v3.3.2
         with:
-          arguments: :demo-microservice:build :demo-microservice:dockerTag
+          build-root-directory: demo-microservice
+          arguments: build docker
 
       - name: Hello World
         if: always()
