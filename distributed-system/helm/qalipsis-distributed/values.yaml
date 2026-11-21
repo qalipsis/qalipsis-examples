@@ -31,6 +31,8 @@ kibana:
     repository: docker.elastic.co/kibana/kibana
     tag: "7.17.21"
   replicas: 1
+  # Path under which Kibana is served, directly and through NGINX; without trailing slash.
+  basePath: /kibana
   service:
     type: ClusterIP
     port: 5601
@@ -154,7 +156,9 @@ httpToKafka:
   enabled: true
   image:
     repository: aerisconsulting/http-to-kafka
-    tag: "latest"
+    # Pinned to the linux/amd64 manifest, as `platform: linux/amd64` does in docker-compose.yml:
+    # the linux/arm64 manifest of the image contains an amd64 binary.
+    tag: "latest@sha256:6c57a8cfd33d6667c0f0b42157f065aa59c6327e934a56b1c40eb35943ab7883"
   replicas: 1
   kafka:
     topic: http-request

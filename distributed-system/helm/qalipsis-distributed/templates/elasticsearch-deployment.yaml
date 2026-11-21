@@ -8,6 +8,9 @@ metadata:
     {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "elasticsearch") | nindent 4 }}
 spec:
   replicas: {{ .Values.elasticsearch.replicas }}
+  # The pod being replaced holds the lock on the ReadWriteOnce data volume.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       {{- include "qalipsis.selectorLabels" (dict "Release" .Release "component" "elasticsearch") | nindent 6 }}

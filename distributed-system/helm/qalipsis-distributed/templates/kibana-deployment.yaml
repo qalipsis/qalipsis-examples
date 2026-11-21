@@ -30,11 +30,16 @@ spec:
           env:
             - name: ELASTICSEARCH_HOSTS
               value: "http://{{ include "qalipsis.fullname" . }}-elasticsearch:{{ .Values.elasticsearch.service.port }}"
+            # Kibana serves itself under the base path, so that its redirects and links work behind the NGINX proxy.
+            - name: SERVER_BASEPATH
+              value: {{ .Values.kibana.basePath | quote }}
+            - name: SERVER_REWRITEBASEPATH
+              value: "true"
           resources:
             {{- toYaml .Values.kibana.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /
+              path: {{ .Values.kibana.basePath }}/api/status
               port: 5601
             initialDelaySeconds: 10
             periodSeconds: 5
@@ -42,7 +47,7 @@ spec:
             failureThreshold: 20
           livenessProbe:
             httpGet:
-              path: /
+              path: {{ .Values.kibana.basePath }}/api/status
               port: 5601
             initialDelaySeconds: 30
             periodSeconds: 10

@@ -93,7 +93,7 @@ data:
                 <h1>QALIPSIS Distributed System</h1>
                 <ul>
                 {{- if .Values.kibana.enabled }}
-                <li><a href="/kibana/">Kibana</a></li>
+                <li><a href="{{ .Values.kibana.basePath }}/">Kibana</a></li>
                 {{- end }}
                 {{- if .Values.elasticsearch.enabled }}
                 <li><a href="/elasticsearch/">Elasticsearch</a></li>
@@ -112,8 +112,9 @@ data:
             }
 
             {{- if .Values.kibana.enabled }}
-            location /kibana/ {
-                proxy_pass http://kibana/;
+            location {{ .Values.kibana.basePath }}/ {
+                # No URI on proxy_pass: Kibana expects the base path in the request.
+                proxy_pass http://kibana;
                 proxy_set_header Host $host;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

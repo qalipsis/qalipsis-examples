@@ -130,6 +130,7 @@ helm install my-release . -f my-custom-values.yaml
 | `kibana.enabled`                 | `true`                                       | Deploy Kibana                        |
 | `kibana.image.repository`        | `docker.elastic.co/kibana/kibana`            | Image repository                     |
 | `kibana.image.tag`               | `7.17.21`                                    | Image tag                            |
+| `kibana.basePath`                | `/kibana`                                    | Path Kibana is served under          |
 | `redis.enabled`                  | `true`                                       | Deploy Redis                         |
 | `redis.image.repository`         | `redis`                                      | Image repository                     |
 | `redis.image.tag`                | `latest`                                     | Image tag                            |
@@ -309,7 +310,7 @@ kubectl port-forward svc/my-release-qalipsis-distributed-nginx 8080:80
 
 ```bash
 kubectl port-forward svc/my-release-qalipsis-distributed-elasticsearch 9200:9200
-kubectl port-forward svc/my-release-qalipsis-distributed-kibana 5601:5601
+kubectl port-forward svc/my-release-qalipsis-distributed-kibana 5601:5601     # http://localhost:5601/kibana/
 kubectl port-forward svc/my-release-qalipsis-distributed-kafka-console 28080:8080
 kubectl port-forward svc/my-release-qalipsis-distributed-kafka 19092:19092
 kubectl port-forward svc/my-release-qalipsis-distributed-pgadmin 25433:80
@@ -374,7 +375,8 @@ spec:
     - host: kibana.example.com
       http:
         paths:
-          - path: /
+          # Kibana is served under kibana.basePath.
+          - path: {{ .Values.kibana.basePath }}
             pathType: Prefix
             backend:
               service:
