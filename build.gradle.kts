@@ -45,6 +45,10 @@ description = "QALIPSIS Examples"
  */
 val javaVersion = 21
 
+/** Attempts of docker compose up before an example fails, and delay between them. */
+val COMPOSE_UP_ATTEMPTS = 3
+val COMPOSE_UP_RETRY_DELAY_MS = 5_000L
+
 tasks.withType<Wrapper> {
     distributionType = Wrapper.DistributionType.BIN
     gradleVersion = "8.14.3"
@@ -138,13 +142,37 @@ allprojects {
     // stopped after. Plain Docker Compose, which replaces the unmaintained Palantir plugin (it does not run
     // on Gradle 8.13 and later); the task names are unchanged.
     if (project.file("docker-compose.yml").isFile) {
-        tasks.register<Exec>("dockerComposeUp") {
+        tasks.register("dockerComposeUp") {
             group = "docker"
             description = "Starts the services of docker-compose.yml."
-            workingDir = projectDir
-            // Without --wait: the examples wait with a one-shot "healthiness checker" container, which
-            // depends on the healthy services and exits, and which --wait would report as a failure.
-            commandLine("docker", "compose", "up", "--detach")
+            val composeDir = projectDir
+            doLast {
+                // The output goes through the logger: the one of the process would reach the Gradle daemon only.
+                fun compose(vararg arguments: String): Int {
+                    val process = ProcessBuilder(listOf("docker", "compose") + arguments)
+                        .directory(composeDir).redirectErrorStream(true).start()
+                    process.inputStream.bufferedReader().forEachLine(logger::lifecycle)
+                    return process.waitFor()
+                }
+                // Without --wait: the examples wait with a one-shot "healthiness checker" container, which depends
+                // on the healthy services and exits, and which --wait would report as a failure.
+                // Some services exit once on their first start (InfluxDB during its setup) before their restart
+                // policy brings them up; Compose then reports a failed dependency, which the next attempt resolves.
+                val started = (1..COMPOSE_UP_ATTEMPTS).any { attempt ->
+                    (compose("up", "--detach") == 0).also { success ->
+                        if (!success && attempt < COMPOSE_UP_ATTEMPTS) {
+                            logger.warn("docker compose up failed, attempt $attempt of $COMPOSE_UP_ATTEMPTS")
+                            Thread.sleep(COMPOSE_UP_RETRY_DELAY_MS)
+                        }
+                    }
+                }
+                if (!started) {
+                    // The state and logs of the services are lost on CI otherwise.
+                    compose("ps", "--all")
+                    compose("logs", "--no-color", "--tail", "100")
+                    throw GradleException("docker compose up failed $COMPOSE_UP_ATTEMPTS times")
+                }
+            }
         }
         tasks.register<Exec>("dockerComposeDown") {
             group = "docker"

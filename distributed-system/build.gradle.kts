@@ -55,6 +55,10 @@ tasks {
             "-XX:MaxInlineLevel=15"
         )
         maxHeapSize = "2G"
+        // The live report needs an interactive terminal: on CI, it runs out of memory and the campaign never ends.
+        if (System.getenv("CI") != null) {
+            jvmArgs("-Dreport.export.console-live.enabled=false")
+        }
 
         dependsOn("dockerComposeUp")
         finalizedBy("dockerComposeDown")

@@ -16,7 +16,8 @@ env:
 
 jobs:
   build:
-    # The native image of demo-microservice takes a large part of it.
+    # The native image of demo-microservice takes a large part of it. Each step has its own timeout, so that a
+    # hanging example fails alone instead of using the time of the job.
     timeout-minutes: 60
     runs-on: ${{ matrix.os }}
     strategy:
@@ -42,6 +43,7 @@ jobs:
       # demo-microservice is a build of its own; its native image is used by the distributed example.
       - name: Create demo service
         if: always()
+        timeout-minutes: 20
         uses: gradle/gradle-build-action@v3.3.2
         with:
           build-root-directory: demo-microservice
@@ -49,30 +51,35 @@ jobs:
 
       - name: Hello World
         if: always()
+        timeout-minutes: 10
         uses: gradle/gradle-build-action@v3.3.2
         with:
           arguments: :hello-world:check
 
       - name: Apache Cassandra
         if: always()
+        timeout-minutes: 10
         uses: gradle/gradle-build-action@v3.3.2
         with:
           arguments: :cassandra:check
 
       - name: Elasticsearch
         if: always()
+        timeout-minutes: 10
         uses: gradle/gradle-build-action@v3.3.2
         with:
           arguments: :elasticsearch:check
 
       - name: Graphite
         if: always()
+        timeout-minutes: 10
         uses: gradle/gradle-build-action@v3.3.2
         with:
           arguments: :graphite:check
 
       - name: InfluxDB
         if: always()
+        timeout-minutes: 10
         uses: gradle/gradle-build-action@v3.3.2
         with:
           arguments: :influxdb:check
@@ -86,66 +93,77 @@ jobs:
 
       - name: Java Messaging Service
         if: always()
+        timeout-minutes: 10
         uses: gradle/gradle-build-action@v3.3.2
         with:
           arguments: :jms:check
 
       - name: Apache Kafka
         if: always()
+        timeout-minutes: 10
         uses: gradle/gradle-build-action@v3.3.2
         with:
           arguments: :kafka:check
 
       - name: MongoDB
         if: always()
+        timeout-minutes: 10
         uses: gradle/gradle-build-action@v3.3.2
         with:
           arguments: :mongodb:check
 
       - name: Netty - MQTT
         if: always()
+        timeout-minutes: 10
         uses: gradle/gradle-build-action@v3.3.2
         with:
           arguments: :netty-mqtt:check
 
       - name: Netty - TCP
         if: always()
+        timeout-minutes: 10
         uses: gradle/gradle-build-action@v3.3.2
         with:
           arguments: :netty-tcp:check
 
       - name: R2DBC Jasync
         if: always()
+        timeout-minutes: 10
         uses: gradle/gradle-build-action@v3.3.2
         with:
           arguments: :r2dbc-jasync:check
 
       - name: RabbitMQ
         if: always()
+        timeout-minutes: 10
         uses: gradle/gradle-build-action@v3.3.2
         with:
           arguments: :rabbitmq:check
 
       - name: Redis
         if: always()
+        timeout-minutes: 10
         uses: gradle/gradle-build-action@v3.3.2
         with:
           arguments: :redis:check
 
       - name: SQL
         if: always()
+        timeout-minutes: 10
         uses: gradle/gradle-build-action@v3.3.2
         with:
           arguments: :sql:check
 
       - name: Quickstart HTTP
         if: always()
+        timeout-minutes: 10
         uses: gradle/gradle-build-action@v3.3.2
         with:
           arguments: :quickstart-http:check
 
       - name: Distributed system
         if: always()
+        timeout-minutes: 20
         uses: gradle/gradle-build-action@v3.3.2
         with:
           arguments: :distributed-system:check
