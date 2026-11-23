@@ -1,0 +1,27 @@
+name: Example - Distributed system
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches:
+      - main
+    paths:
+      - 'distributed-system/**'
+      - 'demo-microservice/**'
+      - '.github/workflows/example-distributed-system.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'distributed-system/**'
+      - 'demo-microservice/**'
+      - '.github/workflows/example-distributed-system.yml'
+
+jobs:
+  example:
+    uses: ./.github/workflows/run-example.yml
+    with:
+      project: distributed-system
+      timeout-minutes: 20
+      demo-service: true

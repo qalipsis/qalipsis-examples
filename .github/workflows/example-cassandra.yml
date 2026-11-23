@@ -1,0 +1,23 @@
+name: Example - Apache Cassandra
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches:
+      - main
+    paths:
+      - 'cassandra/**'
+      - '.github/workflows/example-cassandra.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'cassandra/**'
+      - '.github/workflows/example-cassandra.yml'
+
+jobs:
+  example:
+    uses: ./.github/workflows/run-example.yml
+    with:
+      project: cassandra

@@ -1,0 +1,23 @@
+name: Example - Hello World
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches:
+      - main
+    paths:
+      - 'hello-world/**'
+      - '.github/workflows/example-hello-world.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'hello-world/**'
+      - '.github/workflows/example-hello-world.yml'
+
+jobs:
+  example:
+    uses: ./.github/workflows/run-example.yml
+    with:
+      project: hello-world

@@ -1,0 +1,23 @@
+name: Example - Quickstart HTTP
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches:
+      - main
+    paths:
+      - 'quickstart-http/**'
+      - '.github/workflows/example-quickstart-http.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'quickstart-http/**'
+      - '.github/workflows/example-quickstart-http.yml'
+
+jobs:
+  example:
+    uses: ./.github/workflows/run-example.yml
+    with:
+      project: quickstart-http

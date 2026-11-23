@@ -1,0 +1,70 @@
+# Runs the checks of one example. Called by the workflow of each example.
+name: Run an example
+
+on:
+  workflow_call:
+    inputs:
+      project:
+        description: Gradle project of the example, e.g. hello-world
+        required: true
+        type: string
+      timeout-minutes:
+        description: Timeout of the checks of the example
+        required: false
+        type: number
+        default: 10
+      demo-service:
+        description: Builds the native image of demo-microservice before the example
+        required: false
+        type: boolean
+        default: false
+
+env:
+  GITHUB_ACTIONS: true
+
+jobs:
+  check:
+    # The native image of demo-microservice takes a large part of the job, when it is built.
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      # The JDK that starts Gradle. Gradle and the examples always run on JDK 21 (daemon JVM criteria and
+      # Kotlin toolchain), which Gradle downloads.
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: temurin
+
+      - name: Validate Gradle wrapper
+        uses: gradle/wrapper-validation-action@v1.0.4
+
+      # demo-microservice is a build of its own; its native image replaces the one of Docker Hub.
+      - name: Create demo service
+        if: inputs.demo-service
+        timeout-minutes: 20
+        uses: gradle/gradle-build-action@v3.3.2
+        with:
+          build-root-directory: demo-microservice
+          arguments: build docker
+
+      - name: Check ${{ inputs.project }}
+        timeout-minutes: ${{ inputs.timeout-minutes }}
+        uses: gradle/gradle-build-action@v3.3.2
+        with:
+          arguments: :${{ inputs.project }}:check
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v5
+        if: always()
+        with:
+          check_name: Test report of ${{ inputs.project }}
+          report_paths: '${{ inputs.project }}/build/test-results/**/*.xml'
+          fail_on_failure: true
+          include_passed: true
+          annotations_limit: 0
+          summary: true
+          detailed_summary: true

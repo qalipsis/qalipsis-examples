@@ -1,3 +1,5 @@
+# Runs all the examples, each in a job of its own. Each example also has its own workflow, which only runs when its
+# directory changes; this one runs when the files shared by all the examples change, or on demand.
 name: Verification of examples
 
 on:
@@ -5,176 +7,80 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - 'project.version'
+      - 'gradlew'
+      - 'gradle/**'
+      - 'build-config/**'
+      - '.github/workflows/execute-examples.yml'
+      - '.github/workflows/run-example.yml'
   pull_request:
     branches:
       - main
+    paths:
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - 'project.version'
+      - 'gradlew'
+      - 'gradle/**'
+      - 'build-config/**'
+      - '.github/workflows/execute-examples.yml'
+      - '.github/workflows/run-example.yml'
 #  schedule:
 #    - cron: '0 5 * * 7' # At 5:00 UTC on Sunday.
 
-env:
-  GITHUB_ACTIONS: true
-
 jobs:
-  build:
-    # The native image of demo-microservice takes a large part of it. Each step has its own timeout, so that a
-    # hanging example fails alone instead of using the time of the job.
-    timeout-minutes: 60
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ 'ubuntu-latest' ]
-        # The JDK that starts Gradle. Gradle and the examples always run on JDK 21 (daemon JVM criteria and
-        # Kotlin toolchain), which Gradle downloads.
-        java: [ '25' ]
+  cassandra:
+    uses: ./.github/workflows/example-cassandra.yml
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+  distributed-system:
+    uses: ./.github/workflows/example-distributed-system.yml
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4 # https://github.com/actions/setup-java
-        with:
-          java-version: ${{ matrix.java }}
-          distribution: temurin
+  elasticsearch:
+    uses: ./.github/workflows/example-elasticsearch.yml
 
-      - name: Validate Gradle wrapper
-        uses: gradle/wrapper-validation-action@v1.0.4
+  graphite:
+    uses: ./.github/workflows/example-graphite.yml
 
-      # demo-microservice is a build of its own; its native image is used by the distributed example.
-      - name: Create demo service
-        if: always()
-        timeout-minutes: 20
-        uses: gradle/gradle-build-action@v3.3.2
-        with:
-          build-root-directory: demo-microservice
-          arguments: build docker
+  hello-world:
+    uses: ./.github/workflows/example-hello-world.yml
 
-      - name: Hello World
-        if: always()
-        timeout-minutes: 10
-        uses: gradle/gradle-build-action@v3.3.2
-        with:
-          arguments: :hello-world:check
+  influxdb:
+    uses: ./.github/workflows/example-influxdb.yml
 
-      - name: Apache Cassandra
-        if: always()
-        timeout-minutes: 10
-        uses: gradle/gradle-build-action@v3.3.2
-        with:
-          arguments: :cassandra:check
+  jms:
+    uses: ./.github/workflows/example-jms.yml
 
-      - name: Elasticsearch
-        if: always()
-        timeout-minutes: 10
-        uses: gradle/gradle-build-action@v3.3.2
-        with:
-          arguments: :elasticsearch:check
+  kafka:
+    uses: ./.github/workflows/example-kafka.yml
 
-      - name: Graphite
-        if: always()
-        timeout-minutes: 10
-        uses: gradle/gradle-build-action@v3.3.2
-        with:
-          arguments: :graphite:check
+  mongodb:
+    uses: ./.github/workflows/example-mongodb.yml
 
-      - name: InfluxDB
-        if: always()
-        timeout-minutes: 10
-        uses: gradle/gradle-build-action@v3.3.2
-        with:
-          arguments: :influxdb:check
+  netty-mqtt:
+    uses: ./.github/workflows/example-netty-mqtt.yml
 
-      # Failing on Github: ERROR: for healthy_checker  Container "abaf099899fa" is unhealthy
-      #- name: Jakarta EE Messaging
-      #  if: always()
-      #  uses: gradle/gradle-build-action@v3.3.2
-      #  with:
-      #    arguments: :jakarta-ee-messaging:check
+  netty-tcp:
+    uses: ./.github/workflows/example-netty-tcp.yml
 
-      - name: Java Messaging Service
-        if: always()
-        timeout-minutes: 10
-        uses: gradle/gradle-build-action@v3.3.2
-        with:
-          arguments: :jms:check
+  quickstart-http:
+    uses: ./.github/workflows/example-quickstart-http.yml
 
-      - name: Apache Kafka
-        if: always()
-        timeout-minutes: 10
-        uses: gradle/gradle-build-action@v3.3.2
-        with:
-          arguments: :kafka:check
+  r2dbc-jasync:
+    uses: ./.github/workflows/example-r2dbc-jasync.yml
 
-      - name: MongoDB
-        if: always()
-        timeout-minutes: 10
-        uses: gradle/gradle-build-action@v3.3.2
-        with:
-          arguments: :mongodb:check
+  rabbitmq:
+    uses: ./.github/workflows/example-rabbitmq.yml
 
-      - name: Netty - MQTT
-        if: always()
-        timeout-minutes: 10
-        uses: gradle/gradle-build-action@v3.3.2
-        with:
-          arguments: :netty-mqtt:check
+  redis:
+    uses: ./.github/workflows/example-redis.yml
 
-      - name: Netty - TCP
-        if: always()
-        timeout-minutes: 10
-        uses: gradle/gradle-build-action@v3.3.2
-        with:
-          arguments: :netty-tcp:check
+  sql:
+    uses: ./.github/workflows/example-sql.yml
 
-      - name: R2DBC Jasync
-        if: always()
-        timeout-minutes: 10
-        uses: gradle/gradle-build-action@v3.3.2
-        with:
-          arguments: :r2dbc-jasync:check
-
-      - name: RabbitMQ
-        if: always()
-        timeout-minutes: 10
-        uses: gradle/gradle-build-action@v3.3.2
-        with:
-          arguments: :rabbitmq:check
-
-      - name: Redis
-        if: always()
-        timeout-minutes: 10
-        uses: gradle/gradle-build-action@v3.3.2
-        with:
-          arguments: :redis:check
-
-      - name: SQL
-        if: always()
-        timeout-minutes: 10
-        uses: gradle/gradle-build-action@v3.3.2
-        with:
-          arguments: :sql:check
-
-      - name: Quickstart HTTP
-        if: always()
-        timeout-minutes: 10
-        uses: gradle/gradle-build-action@v3.3.2
-        with:
-          arguments: :quickstart-http:check
-
-      - name: Distributed system
-        if: always()
-        timeout-minutes: 20
-        uses: gradle/gradle-build-action@v3.3.2
-        with:
-          arguments: :distributed-system:check
-
-      - name: Publish Test Report
-        uses: mikepenz/action-junit-report@v5
-        if: always()
-        with:
-          report_paths: '**/build/test-results/**/*.xml'
-          fail_on_failure: true
-          include_passed: true
-          annotations_limit: 0
-          summary: true
-          detailed_summary: true
+  # Failing on Github: ERROR: for healthy_checker  Container "abaf099899fa" is unhealthy
+  # jakarta-ee-messaging:

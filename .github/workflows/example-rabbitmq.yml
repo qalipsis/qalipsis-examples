@@ -1,0 +1,23 @@
+name: Example - RabbitMQ
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches:
+      - main
+    paths:
+      - 'rabbitmq/**'
+      - '.github/workflows/example-rabbitmq.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'rabbitmq/**'
+      - '.github/workflows/example-rabbitmq.yml'
+
+jobs:
+  example:
+    uses: ./.github/workflows/run-example.yml
+    with:
+      project: rabbitmq

@@ -1,0 +1,23 @@
+name: Example - Redis
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches:
+      - main
+    paths:
+      - 'redis/**'
+      - '.github/workflows/example-redis.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'redis/**'
+      - '.github/workflows/example-redis.yml'
+
+jobs:
+  example:
+    uses: ./.github/workflows/run-example.yml
+    with:
+      project: redis

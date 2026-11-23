@@ -1,0 +1,23 @@
+name: Example - MongoDB
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches:
+      - main
+    paths:
+      - 'mongodb/**'
+      - '.github/workflows/example-mongodb.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'mongodb/**'
+      - '.github/workflows/example-mongodb.yml'
+
+jobs:
+  example:
+    uses: ./.github/workflows/run-example.yml
+    with:
+      project: mongodb

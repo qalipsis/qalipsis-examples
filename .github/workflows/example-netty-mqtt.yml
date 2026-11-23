@@ -1,0 +1,23 @@
+name: Example - Netty - MQTT
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches:
+      - main
+    paths:
+      - 'netty-mqtt/**'
+      - '.github/workflows/example-netty-mqtt.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'netty-mqtt/**'
+      - '.github/workflows/example-netty-mqtt.yml'
+
+jobs:
+  example:
+    uses: ./.github/workflows/run-example.yml
+    with:
+      project: netty-mqtt

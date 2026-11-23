@@ -1,0 +1,23 @@
+name: Example - Apache Kafka
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches:
+      - main
+    paths:
+      - 'kafka/**'
+      - '.github/workflows/example-kafka.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'kafka/**'
+      - '.github/workflows/example-kafka.yml'
+
+jobs:
+  example:
+    uses: ./.github/workflows/run-example.yml
+    with:
+      project: kafka

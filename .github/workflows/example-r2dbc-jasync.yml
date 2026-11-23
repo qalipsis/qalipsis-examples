@@ -1,0 +1,23 @@
+name: Example - R2DBC Jasync
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches:
+      - main
+    paths:
+      - 'r2dbc-jasync/**'
+      - '.github/workflows/example-r2dbc-jasync.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'r2dbc-jasync/**'
+      - '.github/workflows/example-r2dbc-jasync.yml'
+
+jobs:
+  example:
+    uses: ./.github/workflows/run-example.yml
+    with:
+      project: r2dbc-jasync

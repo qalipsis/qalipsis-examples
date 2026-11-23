@@ -1,0 +1,23 @@
+name: Example - SQL
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches:
+      - main
+    paths:
+      - 'sql/**'
+      - '.github/workflows/example-sql.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'sql/**'
+      - '.github/workflows/example-sql.yml'
+
+jobs:
+  example:
+    uses: ./.github/workflows/run-example.yml
+    with:
+      project: sql

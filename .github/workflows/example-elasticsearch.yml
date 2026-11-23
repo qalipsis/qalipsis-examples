@@ -1,0 +1,23 @@
+name: Example - Elasticsearch
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches:
+      - main
+    paths:
+      - 'elasticsearch/**'
+      - '.github/workflows/example-elasticsearch.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'elasticsearch/**'
+      - '.github/workflows/example-elasticsearch.yml'
+
+jobs:
+  example:
+    uses: ./.github/workflows/run-example.yml
+    with:
+      project: elasticsearch

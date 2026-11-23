@@ -1,0 +1,23 @@
+name: Example - Netty - TCP
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches:
+      - main
+    paths:
+      - 'netty-tcp/**'
+      - '.github/workflows/example-netty-tcp.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'netty-tcp/**'
+      - '.github/workflows/example-netty-tcp.yml'
+
+jobs:
+  example:
+    uses: ./.github/workflows/run-example.yml
+    with:
+      project: netty-tcp

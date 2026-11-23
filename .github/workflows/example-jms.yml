@@ -1,0 +1,23 @@
+name: Example - Java Messaging Service
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches:
+      - main
+    paths:
+      - 'jms/**'
+      - '.github/workflows/example-jms.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'jms/**'
+      - '.github/workflows/example-jms.yml'
+
+jobs:
+  example:
+    uses: ./.github/workflows/run-example.yml
+    with:
+      project: jms
