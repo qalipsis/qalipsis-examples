@@ -122,7 +122,7 @@ class R2dbcJasyncSaveAndPoll {
                         password = "root"
                     }
 
-                    query("select * from battery_state order by \"timestamp\"")
+                    query("select * from battery_state order by insertion_order")
 
                     pollDelay(Duration.ofSeconds(1))
                 }
