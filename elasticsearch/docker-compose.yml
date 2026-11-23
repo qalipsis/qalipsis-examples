@@ -1,7 +1,7 @@
 services:
   elasticsearch:
     container_name: elasticsearch
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.4.1
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
     restart: always
     environment:
       - "xpack.security.enabled=false"

@@ -220,7 +220,7 @@ class DistributedSystemScenario(
                 it.sql()
                     .poll {
                         name = "poll.in"
-                        query(""" SELECT * FROM device_state order by "timestamp" """)
+                        query(""" SELECT * FROM device_state order by saving_timestamp """)
                         pollDelay(Duration.ofSeconds(1))
                     }.flatten()
             }
